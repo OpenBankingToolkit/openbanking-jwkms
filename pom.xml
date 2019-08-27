@@ -35,7 +35,9 @@
     </properties>
 
     <modules>
+        <module>forgerock-openbanking-jwkms-client</module>
         <module>forgerock-openbanking-jwkms-core</module>
-        <module>forgerock-openbanking-starter-jwkms</module>
+        <module>forgerock-openbanking-jwkms-server</module>
+        <module>forgerock-openbanking-jwkms-sample</module>
     </modules>
 </project>
