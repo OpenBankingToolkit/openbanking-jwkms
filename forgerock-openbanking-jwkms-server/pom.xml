@@ -1,0 +1,31 @@
+<!--
+
+    Copyright 2019 ForgeRock AS. All Rights Reserved
+
+    Use of this code requires a commercial software license with ForgeRock AS.
+    or with one of its affiliates. All use shall be exclusively subject
+    to such license between the licensee and ForgeRock AS.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.forgerock.openbanking.jwkms</groupId>
+    <artifactId>forgerock-openbanking-jwkms-server</artifactId>
+    <packaging>jar</packaging>
+    <name>jwkms-server</name>
+
+    <parent>
+        <groupId>com.forgerock.openbanking.jwkms</groupId>
+        <artifactId>forgerock-openbanking-reference-implementation-jwkms</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.forgerock.openbanking.jwkms</groupId>
+            <artifactId>forgerock-openbanking-jwkms-core</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+</project>
