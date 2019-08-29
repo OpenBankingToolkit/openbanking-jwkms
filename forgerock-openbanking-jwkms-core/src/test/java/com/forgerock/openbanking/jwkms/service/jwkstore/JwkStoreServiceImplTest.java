@@ -9,9 +9,9 @@ package com.forgerock.openbanking.jwkms.service.jwkstore;
 
 import com.forgerock.cert.utils.CertificateConfiguration;
 import com.forgerock.openbanking.auth.config.MATLSConfigurationProperties;
-import com.forgerock.openbanking.auth.model.csr.CSRGenerationResponse;
 import com.forgerock.openbanking.core.model.JwkMsKey;
 import com.forgerock.openbanking.jwkms.service.keystore.JwkKeyStoreService;
+import com.forgerock.openbanking.ssl.model.csr.CSRGenerationResponse;
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.Curve;

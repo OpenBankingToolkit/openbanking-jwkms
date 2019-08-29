@@ -7,7 +7,7 @@
  */
 package com.forgerock.openbanking.jwkms.service.keystore;
 
-import com.forgerock.openbanking.auth.services.keystore.KeyStoreFileService;
+import com.forgerock.openbanking.ssl.services.keystore.KeyStoreFileService;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
