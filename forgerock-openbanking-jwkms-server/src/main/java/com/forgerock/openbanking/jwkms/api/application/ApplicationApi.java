@@ -7,9 +7,9 @@
  */
 package com.forgerock.openbanking.jwkms.api.application;
 
-import com.forgerock.openbanking.auth.model.ForgeRockApplicationResponse;
 import com.forgerock.openbanking.core.model.Application;
 import com.forgerock.openbanking.core.model.ApplicationIdentity;
+import com.forgerock.openbanking.ssl.model.ForgeRockApplicationResponse;
 import io.swagger.annotations.Api;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

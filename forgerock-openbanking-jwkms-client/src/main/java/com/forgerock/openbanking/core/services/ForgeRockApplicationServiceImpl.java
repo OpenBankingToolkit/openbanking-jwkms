@@ -7,8 +7,8 @@
  */
 package com.forgerock.openbanking.core.services;
 
-import com.forgerock.openbanking.auth.model.ForgeRockApplicationResponse;
-import com.forgerock.openbanking.auth.services.ForgeRockApplicationService;
+import com.forgerock.openbanking.ssl.model.ForgeRockApplicationResponse;
+import com.forgerock.openbanking.ssl.services.ForgeRockApplicationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

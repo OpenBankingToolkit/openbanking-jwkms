@@ -7,9 +7,9 @@
  */
 package com.forgerock.openbanking.jwkms.config;
 
-import com.forgerock.openbanking.auth.services.ForgeRockApplicationService;
 import com.forgerock.openbanking.jwkms.service.JwkmsServiceConfiguration;
 import com.forgerock.openbanking.jwkms.service.jwkms.ForgeRockApplicationServiceImpl;
+import com.forgerock.openbanking.ssl.services.ForgeRockApplicationService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;

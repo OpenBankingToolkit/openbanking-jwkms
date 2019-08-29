@@ -8,7 +8,6 @@
 package com.forgerock.openbanking.jwkms.api.application;
 
 import com.forgerock.cert.utils.CertificateConfiguration;
-import com.forgerock.openbanking.auth.model.ForgeRockApplicationResponse;
 import com.forgerock.openbanking.auth.model.OBRIRole;
 import com.forgerock.openbanking.auth.model.SoftwareStatement;
 import com.forgerock.openbanking.core.model.Application;
@@ -22,6 +21,7 @@ import com.forgerock.openbanking.jwkms.repository.SoftwareStatementRepository;
 import com.forgerock.openbanking.jwkms.service.application.ApplicationService;
 import com.forgerock.openbanking.jwkms.service.crypto.CryptoService;
 import com.forgerock.openbanking.jwkms.service.keystore.JwkKeyStoreService;
+import com.forgerock.openbanking.ssl.model.ForgeRockApplicationResponse;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;

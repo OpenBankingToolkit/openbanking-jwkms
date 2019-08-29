@@ -7,11 +7,11 @@
  */
 package com.forgerock.openbanking.core.services;
 
-import com.forgerock.openbanking.auth.model.csr.CSRGenerationResponse;
-import com.forgerock.openbanking.auth.model.csr.CSRImportPemsRequest;
 import com.forgerock.openbanking.core.exceptions.InvalidTokenException;
 import com.forgerock.openbanking.core.model.CreateDetachedJwtResponse;
 import com.forgerock.openbanking.core.model.SigningRequest;
+import com.forgerock.openbanking.ssl.model.csr.CSRGenerationResponse;
+import com.forgerock.openbanking.ssl.model.csr.CSRImportPemsRequest;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jwt.JWTClaimsSet;

@@ -8,8 +8,6 @@
 package com.forgerock.openbanking.jwkms.service.jwkms;
 
 import com.forgerock.cert.utils.CertificateConfiguration;
-import com.forgerock.openbanking.auth.model.ForgeRockApplicationResponse;
-import com.forgerock.openbanking.auth.services.ForgeRockApplicationService;
 import com.forgerock.openbanking.core.model.Application;
 import com.forgerock.openbanking.core.model.ForgeRockApplication;
 import com.forgerock.openbanking.jwkms.config.JwkMsConfigurationProperties;
@@ -17,6 +15,8 @@ import com.forgerock.openbanking.jwkms.repository.ApplicationsRepository;
 import com.forgerock.openbanking.jwkms.repository.ForgeRockApplicationsRepository;
 import com.forgerock.openbanking.jwkms.service.application.ApplicationService;
 import com.forgerock.openbanking.jwkms.service.jwkstore.JwkStoreService;
+import com.forgerock.openbanking.ssl.model.ForgeRockApplicationResponse;
+import com.forgerock.openbanking.ssl.services.ForgeRockApplicationService;
 import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
