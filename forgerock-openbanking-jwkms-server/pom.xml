@@ -26,9 +26,5 @@
             <groupId>com.forgerock.openbanking.jwkms</groupId>
             <artifactId>forgerock-openbanking-jwkms-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.forgerock.openbanking</groupId>
-            <artifactId>forgerock-openbanking-auth</artifactId>
-        </dependency>
     </dependencies>
 </project>

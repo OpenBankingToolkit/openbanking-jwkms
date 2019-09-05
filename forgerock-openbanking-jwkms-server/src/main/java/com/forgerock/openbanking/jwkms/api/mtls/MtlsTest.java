@@ -7,7 +7,7 @@
  */
 package com.forgerock.openbanking.jwkms.api.mtls;
 
-import com.forgerock.openbanking.auth.model.OBRIRole;
+import com.forgerock.openbanking.model.OBRIRole;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
