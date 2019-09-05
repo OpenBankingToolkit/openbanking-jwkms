@@ -7,7 +7,7 @@
  */
 package com.forgerock.openbanking.jwkms.repository;
 
-import com.forgerock.openbanking.auth.model.SoftwareStatement;
+import com.forgerock.openbanking.model.SoftwareStatement;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.repository.query.Param;
 

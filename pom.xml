@@ -31,8 +31,8 @@
     <url>http://www.forgerock.org</url>
 
     <properties>
-        <ob-build.version>1.0.11</ob-build.version>
-        <ob-analytics.version>1.1.0</ob-analytics.version>
+        <ob-build.version>1.0.19-SNAPSHOT</ob-build.version>
+        <ob-analytics.version>1.1.0-SNAPSHOT</ob-analytics.version>
         <javax.version>1.3.2</javax.version>
     </properties>
 
@@ -54,12 +54,17 @@
             </dependency>
             <dependency>
                 <groupId>com.forgerock.openbanking</groupId>
-                <artifactId>forgerock-openbanking-auth</artifactId>
+                <artifactId>forgerock-openbanking-model</artifactId>
                 <version>${ob-build.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.forgerock.openbanking</groupId>
                 <artifactId>forgerock-openbanking-ssl</artifactId>
+                <version>${ob-build.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.forgerock.openbanking</groupId>
+                <artifactId>forgerock-openbanking-auth</artifactId>
                 <version>${ob-build.version}</version>
             </dependency>
             <dependency>

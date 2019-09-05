@@ -7,7 +7,8 @@
  */
 package com.forgerock.openbanking.core.model;
 
-import com.forgerock.openbanking.auth.model.OBRIRole;
+
+import com.forgerock.openbanking.model.OBRIRole;
 
 import java.util.ArrayList;
 import java.util.Arrays;
