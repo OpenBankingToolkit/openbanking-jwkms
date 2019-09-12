@@ -22,10 +22,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.forgerock.openbanking</groupId>
-            <artifactId>forgerock-openbanking-serialisers</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.forgerock.openbanking.analytics</groupId>
             <artifactId>forgerock-openbanking-analytics-client</artifactId>
         </dependency>
