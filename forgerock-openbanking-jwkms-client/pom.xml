@@ -31,6 +31,10 @@
         </dependency>
         <dependency>
             <groupId>com.forgerock.openbanking</groupId>
+            <artifactId>forgerock-openbanking-am</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.forgerock.openbanking</groupId>
             <artifactId>forgerock-openbanking-auth</artifactId>
         </dependency>
         <dependency>

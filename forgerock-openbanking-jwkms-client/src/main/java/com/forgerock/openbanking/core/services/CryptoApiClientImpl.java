@@ -9,7 +9,7 @@ package com.forgerock.openbanking.core.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.forgerock.openbanking.core.config.AMOpenBankingConfiguration;
+import com.forgerock.openbanking.am.config.AMOpenBankingConfiguration;
 import com.forgerock.openbanking.core.exceptions.InvalidTokenException;
 import com.forgerock.openbanking.core.model.CreateDetachedJwtResponse;
 import com.forgerock.openbanking.core.model.SigningRequest;
