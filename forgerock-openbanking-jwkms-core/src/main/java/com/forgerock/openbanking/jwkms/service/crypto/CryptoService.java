@@ -7,11 +7,11 @@
  */
 package com.forgerock.openbanking.jwkms.service.crypto;
 
-import com.forgerock.openbanking.core.exceptions.InvalidTokenException;
 import com.forgerock.openbanking.core.model.Application;
-import com.forgerock.openbanking.core.model.CreateDetachedJwtResponse;
-import com.forgerock.openbanking.core.model.SigningRequest;
 import com.forgerock.openbanking.core.model.ValidDetachedJwtResponse;
+import com.forgerock.openbanking.jwt.exceptions.InvalidTokenException;
+import com.forgerock.openbanking.jwt.model.CreateDetachedJwtResponse;
+import com.forgerock.openbanking.jwt.model.SigningRequest;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;

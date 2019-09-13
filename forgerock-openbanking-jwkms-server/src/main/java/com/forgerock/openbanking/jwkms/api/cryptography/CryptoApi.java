@@ -9,9 +9,9 @@ package com.forgerock.openbanking.jwkms.api.cryptography;
 
 import com.forgerock.cert.utils.CertificateConfiguration;
 import com.forgerock.openbanking.core.model.Application;
-import com.forgerock.openbanking.core.model.CreateDetachedJwtResponse;
 import com.forgerock.openbanking.core.model.ValidDetachedJwtResponse;
 import com.forgerock.openbanking.core.model.ValidJwtResponse;
+import com.forgerock.openbanking.jwt.model.CreateDetachedJwtResponse;
 import com.forgerock.openbanking.ssl.model.csr.CSRGenerationResponse;
 import com.nimbusds.jose.jwk.KeyUse;
 import io.swagger.annotations.Api;
@@ -20,7 +20,12 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
 
