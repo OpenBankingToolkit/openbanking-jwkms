@@ -64,7 +64,7 @@
             </dependency>
             <dependency>
                 <groupId>com.forgerock.openbanking</groupId>
-                <artifactId>forgerock-openbanking-auth</artifactId>
+                <artifactId>forgerock-openbanking-jwt</artifactId>
                 <version>${ob-build.version}</version>
             </dependency>
             <dependency>

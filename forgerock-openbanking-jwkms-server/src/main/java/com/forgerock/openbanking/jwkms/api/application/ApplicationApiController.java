@@ -35,11 +35,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -90,7 +86,7 @@ public class ApplicationApiController implements ApplicationApi {
     public ResponseEntity<Application> create(@RequestBody Application applicationRequest) {
         log.debug("Create a new application");
         try {
-            return ResponseEntity.ok(createApplication(applicationRequest));
+            return ResponseEntity.ok(applicationsRepository.save(createApplication(applicationRequest)));
         } finally {
             log.debug("Application created");
         }
@@ -289,7 +285,7 @@ public class ApplicationApiController implements ApplicationApi {
                 CertificateConfiguration certificateConfiguration = new CertificateConfiguration();
                 certificateConfiguration.setCn(name);
                 applicationRequest.setCertificateConfiguration(certificateConfiguration);
-                application = createApplication(applicationRequest);
+                application = applicationsRepository.save(createApplication(applicationRequest));
 
                 ForgeRockApplication forgeRockApplication = new ForgeRockApplication();
                 forgeRockApplication.setApplicationId(application.getIssuerId());
@@ -342,7 +338,7 @@ public class ApplicationApiController implements ApplicationApi {
     }
 
 
-    private Application createApplication(Application applicationRequest) {
+    public Application createApplication(Application applicationRequest) {
         Application application = new Application();
 
         application.setCertificateConfiguration(applicationRequest.getCertificateConfiguration());
