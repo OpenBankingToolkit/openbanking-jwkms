@@ -27,11 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -39,7 +35,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.annotation.Resource;
 import java.net.URI;
 import java.text.ParseException;
 
@@ -51,11 +46,8 @@ public class CryptoApiClientImpl implements CryptoApiClient {
     @Value("${jwkms.root}")
     private String jwkmsRoot;
 
-    @Resource(name = "forExternal")
+    @Autowired
     private RestTemplate restTemplate;
-
-    @Resource(name = "forExternalForgeRockApplication")
-    private RestTemplate restTemplateForForgeRockApp;
 
     @Autowired
     private AMOpenBankingConfiguration amOpenBankingConfiguration;
@@ -69,7 +61,7 @@ public class CryptoApiClientImpl implements CryptoApiClient {
         URI uri = builder.build().encode().toUri();
 
         LOGGER.debug("Get the jwk_uri for {}. Call jwkms with {}", appId, uri);
-        ResponseEntity<String> entity = restTemplateForForgeRockApp.exchange(uri, HttpMethod.PUT, null, ptr);
+        ResponseEntity<String> entity = restTemplate.exchange(uri, HttpMethod.PUT, null, ptr);
         return JWK.parse(entity.getBody());
     }
 
@@ -79,7 +71,7 @@ public class CryptoApiClientImpl implements CryptoApiClient {
         URI uri = builder.build().encode().toUri();
 
         LOGGER.debug("Get the jwk_uri for {}. Call jwkms with {}", appId, uri);
-        ResponseEntity<String> entity = restTemplateForForgeRockApp.exchange(uri, HttpMethod.PUT, null, ptr);
+        ResponseEntity<String> entity = restTemplate.exchange(uri, HttpMethod.PUT, null, ptr);
         return entity.getBody();
     }
 
@@ -89,7 +81,7 @@ public class CryptoApiClientImpl implements CryptoApiClient {
         URI uri = builder.build().encode().toUri();
 
         LOGGER.debug("Get the jwk_uri for {}. Call jwkms with {}", appId, uri);
-        ResponseEntity<String> entity = restTemplateForForgeRockApp.exchange(uri, HttpMethod.PUT, null, ptr);
+        ResponseEntity<String> entity = restTemplate.exchange(uri, HttpMethod.PUT, null, ptr);
         return entity.getBody();
     }
 

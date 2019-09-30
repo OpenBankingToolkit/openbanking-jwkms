@@ -98,16 +98,6 @@ public class ForgerockOpenbankingJwkMSApplication  {
         return new RestTemplate();
     }
 
-    @Bean(name="forExternal")
-    public RestTemplate restTemplateForExternal() {
-        return new RestTemplate();
-    }
-
-    @Bean(name="forExternalForgeRockApplication")
-    public RestTemplate restTemplateForExternalForgeRockApplication() {
-        return new RestTemplate();
-    }
-
     @Bean
     public JwkmsServiceConfiguration jwkmsServiceConfiguration() {
         return new SelfJwkmsServiceConfiguration();
