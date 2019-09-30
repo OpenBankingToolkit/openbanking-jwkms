@@ -11,10 +11,8 @@ import com.forgerock.cert.utils.CertificateConfiguration;
 import com.forgerock.openbanking.authentication.configurers.MultiAuthenticationCollectorConfigurer;
 import com.forgerock.openbanking.authentication.configurers.collectors.StaticUserCollector;
 import com.forgerock.openbanking.core.model.Application;
-import com.forgerock.openbanking.jwkms.config.SelfJwkmsServiceConfiguration;
 import com.forgerock.openbanking.jwkms.repository.ApplicationsRepository;
 import com.forgerock.openbanking.jwkms.repository.ForgeRockApplicationsRepository;
-import com.forgerock.openbanking.jwkms.service.JwkmsServiceConfiguration;
 import com.forgerock.openbanking.jwkms.service.application.ApplicationService;
 import com.forgerock.openbanking.model.OBRIRole;
 import com.mongodb.MongoClient;
@@ -96,11 +94,6 @@ public class ForgerockOpenbankingJwkMSApplication  {
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();
-    }
-
-    @Bean
-    public JwkmsServiceConfiguration jwkmsServiceConfiguration() {
-        return new SelfJwkmsServiceConfiguration();
     }
 
     public static class CustomAuthProvider implements AuthenticationProvider {

@@ -10,9 +10,7 @@ package com.forgerock.openbanking.jwkms.service;
 import com.forgerock.openbanking.core.services.ApplicationApiClient;
 import com.forgerock.openbanking.core.services.ApplicationApiClientImpl;
 import com.forgerock.openbanking.core.services.CryptoApiClientImpl;
-import com.forgerock.openbanking.core.services.ForgeRockApplicationServiceImpl;
 import com.forgerock.openbanking.jwt.services.CryptoApiClient;
-import com.forgerock.openbanking.ssl.services.ForgeRockApplicationService;
 import org.springframework.context.annotation.Bean;
 
 public class JwkmsServiceConfiguration {
@@ -24,9 +22,4 @@ public class JwkmsServiceConfiguration {
 
     @Bean
     public ApplicationApiClient applicationApiClient() { return new ApplicationApiClientImpl(); }
-
-    @Bean
-    public ForgeRockApplicationService forgeRockApplicationService() {
-        return new ForgeRockApplicationServiceImpl();
-    }
 }
