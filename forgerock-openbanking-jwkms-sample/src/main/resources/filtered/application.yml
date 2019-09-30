@@ -157,6 +157,3 @@ am:
       authentication: ${am.internal.root}/json/authenticate
     credential:
       amadmin: sy95jyiquqvjbbquq845gncysh13eax6 # TODO this is a default that shouldn't need to be here. All apps need it but may not use it.#obri
-
-scgw:
-  port: 443

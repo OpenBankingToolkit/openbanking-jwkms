@@ -11,11 +11,11 @@ import com.forgerock.cert.utils.CertificateConfiguration;
 import com.forgerock.openbanking.authentication.configurers.MultiAuthenticationCollectorConfigurer;
 import com.forgerock.openbanking.authentication.configurers.collectors.StaticUserCollector;
 import com.forgerock.openbanking.core.model.Application;
-import com.forgerock.openbanking.jwkms.api.application.ApplicationApiController;
 import com.forgerock.openbanking.jwkms.config.SelfJwkmsServiceConfiguration;
 import com.forgerock.openbanking.jwkms.repository.ApplicationsRepository;
 import com.forgerock.openbanking.jwkms.repository.ForgeRockApplicationsRepository;
 import com.forgerock.openbanking.jwkms.service.JwkmsServiceConfiguration;
+import com.forgerock.openbanking.jwkms.service.application.ApplicationService;
 import com.forgerock.openbanking.model.OBRIRole;
 import com.mongodb.MongoClient;
 import net.javacrumbs.shedlock.core.LockProvider;
@@ -53,7 +53,7 @@ public class ForgerockOpenbankingJwkMSApplication  {
     @Configuration
     static class CookieWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
         @Autowired
-        private ApplicationApiController applicationApiController;
+        private ApplicationService applicationService;
         @Autowired
         private ApplicationsRepository applicationsRepository;
 
@@ -77,7 +77,7 @@ public class ForgerockOpenbankingJwkMSApplication  {
                                             certificateConfiguration.setCn("anonymous");
                                             applicationRequest.setCertificateConfiguration(certificateConfiguration);
 
-                                            Application application = applicationApiController.createApplication(applicationRequest);
+                                            Application application = applicationService.createApplication(applicationRequest);
                                             application.setIssuerId("anonymous");
                                             applicationsRepository.save(application);
                                         }

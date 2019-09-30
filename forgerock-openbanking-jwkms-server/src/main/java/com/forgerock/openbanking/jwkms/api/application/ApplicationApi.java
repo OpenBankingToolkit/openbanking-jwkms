@@ -37,7 +37,7 @@ public interface ApplicationApi {
 
     @PreAuthorize("hasAnyAuthority('ROLE_FORGEROCK_INTERNAL_APP')")
     @RequestMapping(value = "/{appId}", method = RequestMethod.GET)
-    ResponseEntity<Application> read(@PathVariable String appId);
+    ResponseEntity<Application> read(@PathVariable String appId, Principal principal);
 
     @PreAuthorize("hasAnyAuthority('ROLE_FORGEROCK_INTERNAL_APP')")
     @RequestMapping(value = "/forgerock-app/{name}/jwk_uri", method = RequestMethod.GET)
@@ -45,7 +45,7 @@ public interface ApplicationApi {
 
     @PreAuthorize("hasAnyAuthority('ROLE_FORGEROCK_INTERNAL_APP')")
     @RequestMapping(value = "/{appId}/transport/jwk_uri", method = RequestMethod.GET)
-    ResponseEntity<String> transportKeysJwkUri(@PathVariable String appId);
+    ResponseEntity<String> transportKeysJwkUri(@PathVariable String appId, Principal principal);
 
     /*
         EDIT APP
@@ -57,45 +57,48 @@ public interface ApplicationApi {
 
     @PreAuthorize("hasAnyAuthority('ROLE_FORGEROCK_INTERNAL_APP')")
     @RequestMapping(value = "/{applicationId}", method = RequestMethod.DELETE)
-    ResponseEntity delete(@PathVariable(value = "applicationId") String applicationId);
+    ResponseEntity delete(@PathVariable(value = "applicationId") String applicationId, Principal principal);
 
     @PreAuthorize("hasAnyAuthority('ROLE_FORGEROCK_INTERNAL_APP')")
     @RequestMapping(value = "/{appId}/transport/rotate", method = RequestMethod.PUT)
-    ResponseEntity<Application> transportKeysRotate(@PathVariable String appId);
+    ResponseEntity<Application> transportKeysRotate(@PathVariable String appId, Principal principal);
 
     @PreAuthorize("hasAnyAuthority('ROLE_FORGEROCK_INTERNAL_APP')")
     @RequestMapping(value = "/{appId}/transport/reset", method = RequestMethod.PUT)
-    ResponseEntity<Application> transportKeysReset(@PathVariable String appId);
+    ResponseEntity<Application> transportKeysReset(@PathVariable String appId, Principal principal);
 
     @PreAuthorize("hasAnyAuthority('ROLE_FORGEROCK_INTERNAL_APP')")
     @RequestMapping(value = "/{appId}/jwk_uri", method = RequestMethod.GET)
-    ResponseEntity<String> signingEncryptionKeysJwkUri(@PathVariable String appId);
+    ResponseEntity<String> signingEncryptionKeysJwkUri(@PathVariable String appId, Principal principal);
 
     @PreAuthorize("hasAnyAuthority('ROLE_FORGEROCK_INTERNAL_APP')")
     @RequestMapping(value = "/{appId}/rotate", method = RequestMethod.PUT)
-    ResponseEntity<Application> signingEncryptionKeysRotate(@PathVariable String appId);
+    ResponseEntity<Application> signingEncryptionKeysRotate(@PathVariable String appId, Principal principal);
 
     @PreAuthorize("hasAnyAuthority('ROLE_FORGEROCK_INTERNAL_APP')")
     @RequestMapping(value = "/{appId}/reset", method = RequestMethod.PUT)
-    ResponseEntity<Application> signingEncryptionKeysReset(@PathVariable String appId);
+    ResponseEntity<Application> signingEncryptionKeysReset(@PathVariable String appId, Principal principal);
 
     @PreAuthorize("hasAnyAuthority('ROLE_FORGEROCK_INTERNAL_APP')")
     @RequestMapping(value = "/{appId}/key/{keyId}", method = RequestMethod.PUT)
     ResponseEntity<String> getKey(
             @PathVariable(name = "appId") String appId,
-            @PathVariable(name = "keyId") String keyId);
+            @PathVariable(name = "keyId") String keyId,
+            Principal principal);
 
     @PreAuthorize("hasAnyAuthority('ROLE_FORGEROCK_INTERNAL_APP')")
     @RequestMapping(value = "/{appId}/key/{keyId}/certificate/public/", method = RequestMethod.PUT)
     ResponseEntity<String> getPublicCertificate(
             @PathVariable(name = "appId") String appId,
-            @PathVariable(name = "keyId") String keyId);
+            @PathVariable(name = "keyId") String keyId,
+            Principal principal);
 
     @PreAuthorize("hasAnyAuthority('ROLE_FORGEROCK_INTERNAL_APP')")
     @RequestMapping(value = "/{appId}/key/{keyId}/certificate/private/", method = RequestMethod.PUT)
     ResponseEntity<String> getPrivateCertificate(
             @PathVariable(name = "appId") String appId,
-            @PathVariable(name = "keyId") String keyId);
+            @PathVariable(name = "keyId") String keyId,
+            Principal principal);
 
     @PreAuthorize("hasAnyAuthority('ROLE_FORGEROCK_INTERNAL_APP')")
     @RequestMapping(value = "/authenticate", method = RequestMethod.POST)

@@ -19,7 +19,6 @@ import com.forgerock.openbanking.jwkms.repository.SoftwareStatementRepository;
 import com.forgerock.openbanking.jwkms.service.application.ApplicationService;
 import com.forgerock.openbanking.jwkms.service.crypto.CryptoService;
 import com.forgerock.openbanking.jwkms.service.keystore.JwkKeyStoreService;
-import com.forgerock.openbanking.model.OBRIRole;
 import com.forgerock.openbanking.model.SoftwareStatement;
 import com.forgerock.openbanking.ssl.model.ForgeRockApplicationResponse;
 import com.nimbusds.jose.JOSEException;
@@ -28,13 +27,9 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.util.Base64;
 import lombok.extern.slf4j.Slf4j;
-import org.joda.time.DateTime;
-import org.joda.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayOutputStream;
@@ -51,6 +46,10 @@ import java.util.Optional;
 public class ApplicationApiController implements ApplicationApi {
     public static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
     public static final String END_CERT = "-----END CERTIFICATE-----";
+    public static final String CURRENT = "CURRENT";
+    public static final String CURRENT_SIGNING = "CURRENT_SIGNING";
+    public static final String CURRENT_TRANSPORT = "CURRENT_TRANSPORT";
+    public static final String CURRENT_ENCRYPTION = "CURRENT_ENCRYPTION";
 
     @Autowired
     private ApplicationsRepository applicationsRepository;
@@ -73,7 +72,10 @@ public class ApplicationApiController implements ApplicationApi {
     }
 
     @Override
-    public ResponseEntity read(@PathVariable String appId) {
+    public ResponseEntity read(@PathVariable String appId, Principal principal) {
+        if (CURRENT.equals(appId)) {
+            appId = principal.getName();
+        }
         Optional<Application> isApplication = applicationsRepository.findById(appId);
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
@@ -86,7 +88,7 @@ public class ApplicationApiController implements ApplicationApi {
     public ResponseEntity<Application> create(@RequestBody Application applicationRequest) {
         log.debug("Create a new application");
         try {
-            return ResponseEntity.ok(applicationsRepository.save(createApplication(applicationRequest)));
+            return ResponseEntity.ok(applicationsRepository.save(applicationService.createApplication(applicationRequest)));
         } finally {
             log.debug("Application created");
         }
@@ -94,7 +96,10 @@ public class ApplicationApiController implements ApplicationApi {
 
     @Override
     @RequestMapping(value = "/{applicationId}", method = RequestMethod.DELETE)
-    public ResponseEntity delete(@PathVariable(value = "applicationId") String applicationId) {
+    public ResponseEntity delete(@PathVariable(value = "applicationId") String applicationId, Principal principal) {
+        if (CURRENT.equals(applicationId)) {
+            applicationId = principal.getName();
+        }
         deleteApplication(applicationId);
         return ResponseEntity.ok().build();
 
@@ -102,7 +107,10 @@ public class ApplicationApiController implements ApplicationApi {
 
     @RequestMapping(value = "/{appId}/transport/jwk_uri", method = RequestMethod.GET)
     @Override
-    public ResponseEntity transportKeysJwkUri(@PathVariable String appId) {
+    public ResponseEntity transportKeysJwkUri(@PathVariable String appId, Principal principal) {
+        if (CURRENT.equals(appId)) {
+            appId = principal.getName();
+        }
         Optional<Application> isApplication = applicationsRepository.findById(appId);
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
@@ -112,7 +120,10 @@ public class ApplicationApiController implements ApplicationApi {
 
     @RequestMapping(value = "/{appId}/transport/rotate", method = RequestMethod.PUT)
     @Override
-    public ResponseEntity transportKeysRotate(@PathVariable String appId) {
+    public ResponseEntity transportKeysRotate(@PathVariable String appId, Principal principal) {
+        if (CURRENT.equals(appId)) {
+            appId = principal.getName();
+        }
         Optional<Application> isApplication = applicationsRepository.findById(appId);
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
@@ -124,7 +135,10 @@ public class ApplicationApiController implements ApplicationApi {
 
     @RequestMapping(value = "/{appId}/transport/reset", method = RequestMethod.PUT)
     @Override
-    public ResponseEntity transportKeysReset(@PathVariable String appId) {
+    public ResponseEntity transportKeysReset(@PathVariable String appId, Principal principal) {
+        if (CURRENT.equals(appId)) {
+            appId = principal.getName();
+        }
         Optional<Application> isApplication = applicationsRepository.findById(appId);
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
@@ -135,7 +149,10 @@ public class ApplicationApiController implements ApplicationApi {
     }
 
     @Override
-    public ResponseEntity signingEncryptionKeysJwkUri(@PathVariable String appId) {
+    public ResponseEntity signingEncryptionKeysJwkUri(@PathVariable String appId, Principal principal) {
+        if (CURRENT.equals(appId)) {
+            appId = principal.getName();
+        }
         Optional<Application> isApplication = applicationsRepository.findById(appId);
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
@@ -145,7 +162,10 @@ public class ApplicationApiController implements ApplicationApi {
 
     @RequestMapping(value = "/{appId}/rotate", method = RequestMethod.PUT)
     @Override
-    public ResponseEntity signingEncryptionKeysRotate(@PathVariable String appId) {
+    public ResponseEntity signingEncryptionKeysRotate(@PathVariable String appId, Principal principal) {
+        if (CURRENT.equals(appId)) {
+            appId = principal.getName();
+        }
         Optional<Application> isApplication = applicationsRepository.findById(appId);
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
@@ -157,7 +177,11 @@ public class ApplicationApiController implements ApplicationApi {
 
     @RequestMapping(value = "/{appId}/reset", method = RequestMethod.PUT)
     @Override
-    public ResponseEntity signingEncryptionKeysReset(@PathVariable String appId) {
+    public ResponseEntity signingEncryptionKeysReset(@PathVariable String appId, Principal principal) {
+        if (CURRENT.equals(appId)) {
+            appId = principal.getName();
+        }
+
         Optional<Application> isApplication = applicationsRepository.findById(appId);
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
@@ -169,24 +193,52 @@ public class ApplicationApiController implements ApplicationApi {
 
     @RequestMapping(value = "/{appId}/key/{keyId}", method = RequestMethod.PUT)
     @Override
-    public ResponseEntity getKey(@PathVariable(name = "appId") String appId, @PathVariable(name = "keyId") String keyId) {
+    public ResponseEntity getKey(
+            @PathVariable(name = "appId") String appId,
+            @PathVariable(name = "keyId") String keyId,
+            Principal principal) {
+        if (CURRENT.equals(appId)) {
+            appId = principal.getName();
+        }
         Optional<Application> isApplication = applicationsRepository.findById(appId);
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
         }
         Application application = isApplication.get();
+
+        if (CURRENT_SIGNING.equals(keyId)) {
+            keyId = application.getCurrentSignKid();
+        } else if (CURRENT_ENCRYPTION.equals(keyId)) {
+            keyId = application.getCurrentEncKid();
+        } else if (CURRENT_TRANSPORT.equals(keyId)) {
+            keyId = application.getCurrentTransportKid();
+        }
         return ResponseEntity.ok(application.getKey(keyId).getJwk().toJSONString());
     }
 
 
     @RequestMapping(value = "/{appId}/key/{keyId}/certificate/public/", method = RequestMethod.PUT)
     @Override
-    public ResponseEntity<String> getPublicCertificate(@PathVariable(name = "appId") String appId, @PathVariable(name = "keyId") String keyId) {
+    public ResponseEntity<String> getPublicCertificate(
+            @PathVariable(name = "appId") String appId,
+            @PathVariable(name = "keyId") String keyId,
+            Principal principal) {
+        if (CURRENT.equals(appId)) {
+            appId = principal.getName();
+        }
         Optional<Application> isApplication = applicationsRepository.findById(appId);
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
         }
         Application application = isApplication.get();
+        if (CURRENT_SIGNING.equals(keyId)) {
+            keyId = application.getCurrentSignKid();
+        } else if (CURRENT_ENCRYPTION.equals(keyId)) {
+            keyId = application.getCurrentEncKid();
+        } else if (CURRENT_TRANSPORT.equals(keyId)) {
+            keyId = application.getCurrentTransportKid();
+        }
+
         PrintStream ps = null;
         ByteArrayOutputStream bs = null;
         try {
@@ -220,12 +272,27 @@ public class ApplicationApiController implements ApplicationApi {
 
     @RequestMapping(value = "/{appId}/key/{keyId}/certificate/private/", method = RequestMethod.PUT)
     @Override
-    public ResponseEntity<String> getPrivateCertificate(@PathVariable(name = "appId") String appId, @PathVariable(name = "keyId") String keyId) {
+    public ResponseEntity<String> getPrivateCertificate(
+            @PathVariable(name = "appId") String appId,
+            @PathVariable(name = "keyId") String keyId,
+            Principal principal) {
+
+        if (CURRENT.equals(appId)) {
+            appId = principal.getName();
+        }
         Optional<Application> isApplication = applicationsRepository.findById(appId);
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
         }
         Application application = isApplication.get();
+        if (CURRENT_SIGNING.equals(keyId)) {
+            keyId = application.getCurrentSignKid();
+        } else if (CURRENT_ENCRYPTION.equals(keyId)) {
+            keyId = application.getCurrentEncKid();
+        } else if (CURRENT_TRANSPORT.equals(keyId)) {
+            keyId = application.getCurrentTransportKid();
+        }
+
         PrintStream ps = null;
         ByteArrayOutputStream bs = null;
         try {
@@ -268,49 +335,47 @@ public class ApplicationApiController implements ApplicationApi {
     @Override
     @RequestMapping(value = "/current", method = RequestMethod.GET)
     public ResponseEntity getCurrentApplication(Principal principal) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        Application application;
-        if (authentication.getAuthorities().contains(OBRIRole.ROLE_FORGEROCK_INTERNAL_APP)) {
-
-            Optional<JwkMsConfigurationProperties.ForgeRockApplication> app = jwkMsConfigurationProperties.getApp(principal.getName());
-            String name = principal.getName();
-            if (app.isPresent()) {
-                name = app.get().getName();
-            }
-
-            Optional<ForgeRockApplication> isApp = forgeRockApplicationsRepository.findById(name);
-            if (!isApp.isPresent()) {
-                Application applicationRequest = new Application();
-                CertificateConfiguration certificateConfiguration = new CertificateConfiguration();
-                certificateConfiguration.setCn(name);
-                applicationRequest.setCertificateConfiguration(certificateConfiguration);
-                application = applicationsRepository.save(createApplication(applicationRequest));
-
-                ForgeRockApplication forgeRockApplication = new ForgeRockApplication();
-                forgeRockApplication.setApplicationId(application.getIssuerId());
-                forgeRockApplication.setName(name);
-                forgeRockApplicationsRepository.save(forgeRockApplication);
-                SoftwareStatement softwareStatement = new SoftwareStatement();
-                softwareStatement.setName(name);
-                softwareStatement.setApplicationId(application.getIssuerId());
-                softwareStatement.setId(application.getIssuerId());
-                softwareStatementRepository.save(softwareStatement);
-            } else {
-                application = applicationsRepository.findById(isApp.get().getApplicationId()).get();
-            }
-            if (app.isPresent()) {
-                application = updateJWKMSApplicationFromForgeRockAppConfig(name, app.get(), application);
-            }
-        } else {
-            application = applicationsRepository.findById(principal.getName()).get();
-        }
+        Application application = applicationsRepository.findById(principal.getName()).get();
 
         ForgeRockApplicationResponse forgeRockApplicationResponse = new ForgeRockApplicationResponse();
         forgeRockApplicationResponse.setApplicationId(application.getIssuerId());
         forgeRockApplicationResponse.setTransportKey(application.getCurrentTransportKey().getJwk());
 
         return ResponseEntity.ok(forgeRockApplicationResponse);
+    }
+
+    private Application getApplication(Principal principal) {
+        Application application;
+        Optional<JwkMsConfigurationProperties.ForgeRockApplication> app = jwkMsConfigurationProperties.getApp(principal.getName());
+        String name = principal.getName();
+        if (app.isPresent()) {
+            name = app.get().getName();
+        }
+
+        Optional<ForgeRockApplication> isApp = forgeRockApplicationsRepository.findById(name);
+        if (!isApp.isPresent()) {
+            Application applicationRequest = new Application();
+            CertificateConfiguration certificateConfiguration = new CertificateConfiguration();
+            certificateConfiguration.setCn(name);
+            applicationRequest.setCertificateConfiguration(certificateConfiguration);
+            application = applicationsRepository.save(applicationService.createApplication(applicationRequest));
+
+            ForgeRockApplication forgeRockApplication = new ForgeRockApplication();
+            forgeRockApplication.setApplicationId(application.getIssuerId());
+            forgeRockApplication.setName(name);
+            forgeRockApplicationsRepository.save(forgeRockApplication);
+            SoftwareStatement softwareStatement = new SoftwareStatement();
+            softwareStatement.setName(name);
+            softwareStatement.setApplicationId(application.getIssuerId());
+            softwareStatement.setId(application.getIssuerId());
+            softwareStatementRepository.save(softwareStatement);
+        } else {
+            application = applicationsRepository.findById(isApp.get().getApplicationId()).get();
+        }
+        if (app.isPresent()) {
+            application = applicationService.updateJWKMSApplicationFromForgeRockAppConfig(name, app.get(), application);
+        }
+        return application;
     }
 
     @Override
@@ -338,78 +403,6 @@ public class ApplicationApiController implements ApplicationApi {
     }
 
 
-    public Application createApplication(Application applicationRequest) {
-        Application application = new Application();
-
-        application.setCertificateConfiguration(applicationRequest.getCertificateConfiguration());
-
-        if (applicationRequest.defaultSigningAlgorithm == null) {
-            application.setDefaultSigningAlgorithm(jwkMsConfigurationProperties.getJWSAlgorithm());
-        } else {
-            application.setDefaultSigningAlgorithm(applicationRequest.getDefaultSigningAlgorithm());
-        }
-
-        if (applicationRequest.defaultEncryptionAlgorithm == null) {
-            application.setDefaultEncryptionAlgorithm(jwkMsConfigurationProperties.getJWEAlgorithm());
-        } else {
-            application.setDefaultEncryptionAlgorithm(applicationRequest.getDefaultEncryptionAlgorithm());
-        }
-
-        if (applicationRequest.defaultEncryptionMethod == null) {
-            application.setDefaultEncryptionMethod(jwkMsConfigurationProperties.getEncryptionMethod());
-        } else {
-            application.setDefaultEncryptionMethod(applicationRequest.getDefaultEncryptionMethod());
-        }
-
-        if (applicationRequest.defaultTransportSigningAlgorithm == null) {
-            application.setDefaultTransportSigningAlgorithm(jwkMsConfigurationProperties.getTransportJWSAlgorithm());
-        } else {
-            application.setDefaultTransportSigningAlgorithm(applicationRequest.getDefaultTransportSigningAlgorithm());
-        }
-
-        if (applicationRequest.expirationWindow == null) {
-            application.setExpirationWindow(Duration.millis(jwkMsConfigurationProperties.getExpirationWindowInMillis()));
-        } else {
-            application.setExpirationWindow(applicationRequest.getExpirationWindow());
-        }
-
-        if (applicationRequest.getCertificateConfiguration() == null) {
-            application.setCertificateConfiguration(new CertificateConfiguration());
-        } else {
-            application.setCertificateConfiguration(applicationRequest.getCertificateConfiguration());
-        }
-
-        if (application.getCertificateConfiguration().getCn() == null) {
-            application.getCertificateConfiguration().setCn(jwkMsConfigurationProperties.getCertificate().getCn());
-        }
-        if (application.getCertificateConfiguration().getOu() == null) {
-            application.getCertificateConfiguration().setOu(jwkMsConfigurationProperties.getCertificate().getOu());
-        }
-        if (application.getCertificateConfiguration().getO() == null) {
-            application.getCertificateConfiguration().setO(jwkMsConfigurationProperties.getCertificate().getO());
-        }
-        if (application.getCertificateConfiguration().getL() == null) {
-            application.getCertificateConfiguration().setL(jwkMsConfigurationProperties.getCertificate().getL());
-        }
-        if (application.getCertificateConfiguration().getSt() == null) {
-            application.getCertificateConfiguration().setSt(jwkMsConfigurationProperties.getCertificate().getSt());
-        }
-        if (application.getCertificateConfiguration().getC() == null) {
-            application.getCertificateConfiguration().setC(jwkMsConfigurationProperties.getCertificate().getC());
-        }
-        if (application.getTransportKeysRotationPeriod() == null) {
-            application.setTransportKeysRotationPeriod(jwkMsConfigurationProperties.getRotation().getTransportDuration());
-        }
-        if (application.getSigningAndEncryptionKeysRotationPeriod() == null) {
-            application.setSigningAndEncryptionKeysRotationPeriod(jwkMsConfigurationProperties.getRotation().getKeysDuration());
-        }
-
-
-        applicationService.resetKeys(application);
-        applicationService.resetTransportKeys(application);
-        return applicationsRepository.save(application);
-    }
-
     @Override
     @RequestMapping(value = "/authenticate", method = RequestMethod.POST)
     public ResponseEntity authenticate(@RequestBody String jwkSerialised) {
@@ -423,78 +416,5 @@ public class ApplicationApiController implements ApplicationApi {
             log.warn("Can't parse JWK", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Can't parse JWK");
         }
-    }
-
-
-    private Application updateJWKMSApplicationFromForgeRockAppConfig(
-            String name,
-            JwkMsConfigurationProperties.ForgeRockApplication forgeRockApplicationConfig,
-            Application application) {
-        if (forgeRockApplicationConfig.getSigningKey() != null) {
-            try {
-                JwkMsKey signingJwkMsKey = convertJWKToJwkMSKey(forgeRockApplicationConfig.getSigningKey());
-                if (!application.getCurrentSigningKey().getKid().equals(signingJwkMsKey.getKid())) {
-                    log.debug("Update the signing key for application {}", name);
-                    application.getKeys().put(signingJwkMsKey.getKid(), signingJwkMsKey);
-                    application.getCurrentSigningKey().setValidityWindowStop(DateTime.now());
-                    application.setCurrentSignKid(signingJwkMsKey.getKid());
-                } else {
-                    log.debug("Same kid, no need to upgrade the signing key for application {}", name);
-                }
-            } catch (ParseException e) {
-                log.warn("Can't parse signing JWK {} for {} => Skipping this key",
-                        forgeRockApplicationConfig.getSigningKey(), name, e);
-            }
-        }
-
-        if (forgeRockApplicationConfig.getEncryptionKey() != null) {
-            try {
-                JwkMsKey encryptionJwkMsKey = convertJWKToJwkMSKey(forgeRockApplicationConfig.getEncryptionKey());
-                if (!application.getCurrentEncryptionKey().getKid().equals(encryptionJwkMsKey.getKid())) {
-                    log.debug("Update the encryption key for application {}", name);
-                    application.getKeys().put(encryptionJwkMsKey.getKid(), encryptionJwkMsKey);
-                    application.getCurrentEncryptionKey().setValidityWindowStop(DateTime.now());
-                    application.setCurrentEncKid(encryptionJwkMsKey.getKid());
-                } else {
-                    log.debug("Same kid, no need to upgrade the encryption key for application {}", name);
-                }
-            } catch (ParseException e) {
-                log.warn("Can't parse encryption JWK {} for {} => Skipping this key",
-                        forgeRockApplicationConfig.getSigningKey(), name, e);
-            }
-        }
-
-        if (forgeRockApplicationConfig.getTransportKey() != null) {
-            try {
-                JwkMsKey transportJwkMsKey = convertJWKToJwkMSKey(forgeRockApplicationConfig.getTransportKey());
-                if (!application.getCurrentTransportKey().getKid().equals(transportJwkMsKey.getKid())) {
-                    log.debug("Update the transport key for application {}", name);
-                    application.getTransportKeys().put(transportJwkMsKey.getKid(), transportJwkMsKey);
-                    application.setCurrentTransportKid(transportJwkMsKey.getKid());
-                    application.getCurrentEncryptionKey().setValidityWindowStop(DateTime.now());
-                    application.setCurrentTransportKeyHash(transportJwkMsKey.getJwk().getX509CertSHA256Thumbprint().toString());
-                } else {
-                    log.debug("Same kid, no need to upgrade the transport key for application {}", name);
-                }
-            } catch (ParseException e) {
-                log.warn("Can't parse transport JWK {} for {} => Skipping this key",
-                        forgeRockApplicationConfig.getSigningKey(), name, e);
-            }
-        }
-        return applicationsRepository.save(application);
-    }
-
-    private JwkMsKey convertJWKToJwkMSKey(String jwkSerialised) throws ParseException {
-        JWK jwk = JWK.parse(jwkSerialised);
-        JwkMsKey jwkMsKey = new JwkMsKey();
-        jwkMsKey.setJwk(jwk);
-        jwkMsKey.setAlgorithm(jwk.getAlgorithm());
-        jwkMsKey.setKeyUse(jwk.getKeyUse());
-        jwkMsKey.setKid(jwk.getKeyID());
-        jwkMsKey.setKeystoreAlias(jwk.getKeyID());
-        jwkMsKey.setValidityWindowStart(DateTime.now());
-        jwkMsKey.setValidityWindowStop(DateTime.now().plusYears(3));
-        jwkMsKey.setCaId(jwk.getParsedX509CertChain().get(0).getIssuerX500Principal().getName());
-        return jwkMsKey;
     }
 }
