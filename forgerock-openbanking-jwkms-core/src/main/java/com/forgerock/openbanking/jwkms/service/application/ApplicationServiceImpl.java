@@ -10,10 +10,15 @@ package com.forgerock.openbanking.jwkms.service.application;
 import com.forgerock.cert.utils.CertificateConfiguration;
 import com.forgerock.openbanking.core.model.Application;
 import com.forgerock.openbanking.core.model.ApplicationIdentity;
+import com.forgerock.openbanking.core.model.ForgeRockApplication;
 import com.forgerock.openbanking.core.model.JwkMsKey;
+import com.forgerock.openbanking.jwkms.config.JwkMsConfigurationProperties;
 import com.forgerock.openbanking.jwkms.repository.ApplicationsRepository;
+import com.forgerock.openbanking.jwkms.repository.ForgeRockApplicationsRepository;
+import com.forgerock.openbanking.jwkms.repository.SoftwareStatementRepository;
 import com.forgerock.openbanking.jwkms.service.jwkstore.JwkStoreService;
 import com.forgerock.openbanking.model.OBRIRole;
+import com.forgerock.openbanking.model.SoftwareStatement;
 import com.forgerock.openbanking.ssl.model.csr.CSRGenerationResponse;
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.JWEAlgorithm;
@@ -22,7 +27,9 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyType;
 import com.nimbusds.jose.jwk.KeyUse;
+import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,12 +39,14 @@ import java.security.KeyPair;
 import java.security.KeyStoreException;
 import java.security.cert.CertificateException;
 import java.security.spec.AlgorithmParameterSpec;
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class ApplicationServiceImpl implements ApplicationService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationServiceImpl.class);
 
@@ -53,6 +62,14 @@ public class ApplicationServiceImpl implements ApplicationService {
     private JwkStoreService jwkService;
     @Autowired
     private ApplicationsRepository applicationsRepository;
+    @Autowired
+    private JwkMsConfigurationProperties jwkMsConfigurationProperties;
+    @Autowired
+    private ForgeRockApplicationsRepository forgeRockApplicationsRepository;
+    @Autowired
+    private SoftwareStatementRepository softwareStatementRepository;
+    @Autowired
+    private ApplicationService applicationService;
 
     @Override
     public void rotateKeys(Application application) {
@@ -307,5 +324,186 @@ public class ApplicationServiceImpl implements ApplicationService {
         key.setCreated(DateTime.now());
         LOGGER.debug("Generated JWK {}", jwk);
         return key;
+    }
+
+    @Override
+    public Application getApplication(String username) {
+        Application application;
+        Optional<JwkMsConfigurationProperties.ForgeRockApplication> app = jwkMsConfigurationProperties.getApp(username);
+        String name = username;
+        if (app.isPresent()) {
+            name = app.get().getName();
+        }
+
+        Optional<ForgeRockApplication> isApp = forgeRockApplicationsRepository.findById(name);
+        if (!isApp.isPresent()) {
+            Application applicationRequest = new Application();
+            CertificateConfiguration certificateConfiguration = new CertificateConfiguration();
+            certificateConfiguration.setCn(name);
+            applicationRequest.setCertificateConfiguration(certificateConfiguration);
+            application = applicationsRepository.save(createApplication(applicationRequest));
+
+            ForgeRockApplication forgeRockApplication = new ForgeRockApplication();
+            forgeRockApplication.setApplicationId(application.getIssuerId());
+            forgeRockApplication.setName(name);
+            forgeRockApplicationsRepository.save(forgeRockApplication);
+            SoftwareStatement softwareStatement = new SoftwareStatement();
+            softwareStatement.setName(name);
+            softwareStatement.setApplicationId(application.getIssuerId());
+            softwareStatement.setId(application.getIssuerId());
+            softwareStatementRepository.save(softwareStatement);
+        } else {
+            application = applicationsRepository.findById(isApp.get().getApplicationId()).get();
+        }
+        if (app.isPresent()) {
+            application = updateJWKMSApplicationFromForgeRockAppConfig(name, app.get(), application);
+        }
+        return application;
+    }
+
+    @Override
+    public Application createApplication(Application applicationRequest) {
+        Application application = new Application();
+
+        application.setCertificateConfiguration(applicationRequest.getCertificateConfiguration());
+
+        if (applicationRequest.defaultSigningAlgorithm == null) {
+            application.setDefaultSigningAlgorithm(jwkMsConfigurationProperties.getJWSAlgorithm());
+        } else {
+            application.setDefaultSigningAlgorithm(applicationRequest.getDefaultSigningAlgorithm());
+        }
+
+        if (applicationRequest.defaultEncryptionAlgorithm == null) {
+            application.setDefaultEncryptionAlgorithm(jwkMsConfigurationProperties.getJWEAlgorithm());
+        } else {
+            application.setDefaultEncryptionAlgorithm(applicationRequest.getDefaultEncryptionAlgorithm());
+        }
+
+        if (applicationRequest.defaultEncryptionMethod == null) {
+            application.setDefaultEncryptionMethod(jwkMsConfigurationProperties.getEncryptionMethod());
+        } else {
+            application.setDefaultEncryptionMethod(applicationRequest.getDefaultEncryptionMethod());
+        }
+
+        if (applicationRequest.defaultTransportSigningAlgorithm == null) {
+            application.setDefaultTransportSigningAlgorithm(jwkMsConfigurationProperties.getTransportJWSAlgorithm());
+        } else {
+            application.setDefaultTransportSigningAlgorithm(applicationRequest.getDefaultTransportSigningAlgorithm());
+        }
+
+        if (applicationRequest.expirationWindow == null) {
+            application.setExpirationWindow(Duration.millis(jwkMsConfigurationProperties.getExpirationWindowInMillis()));
+        } else {
+            application.setExpirationWindow(applicationRequest.getExpirationWindow());
+        }
+
+        if (applicationRequest.getCertificateConfiguration() == null) {
+            application.setCertificateConfiguration(new CertificateConfiguration());
+        } else {
+            application.setCertificateConfiguration(applicationRequest.getCertificateConfiguration());
+        }
+
+        if (application.getCertificateConfiguration().getCn() == null) {
+            application.getCertificateConfiguration().setCn(jwkMsConfigurationProperties.getCertificate().getCn());
+        }
+        if (application.getCertificateConfiguration().getOu() == null) {
+            application.getCertificateConfiguration().setOu(jwkMsConfigurationProperties.getCertificate().getOu());
+        }
+        if (application.getCertificateConfiguration().getO() == null) {
+            application.getCertificateConfiguration().setO(jwkMsConfigurationProperties.getCertificate().getO());
+        }
+        if (application.getCertificateConfiguration().getL() == null) {
+            application.getCertificateConfiguration().setL(jwkMsConfigurationProperties.getCertificate().getL());
+        }
+        if (application.getCertificateConfiguration().getSt() == null) {
+            application.getCertificateConfiguration().setSt(jwkMsConfigurationProperties.getCertificate().getSt());
+        }
+        if (application.getCertificateConfiguration().getC() == null) {
+            application.getCertificateConfiguration().setC(jwkMsConfigurationProperties.getCertificate().getC());
+        }
+        if (application.getTransportKeysRotationPeriod() == null) {
+            application.setTransportKeysRotationPeriod(jwkMsConfigurationProperties.getRotation().getTransportDuration());
+        }
+        if (application.getSigningAndEncryptionKeysRotationPeriod() == null) {
+            application.setSigningAndEncryptionKeysRotationPeriod(jwkMsConfigurationProperties.getRotation().getKeysDuration());
+        }
+
+
+        applicationService.resetKeys(application);
+        applicationService.resetTransportKeys(application);
+        return applicationsRepository.save(application);
+    }
+
+    @Override
+    public Application updateJWKMSApplicationFromForgeRockAppConfig(
+            String name,
+            JwkMsConfigurationProperties.ForgeRockApplication forgeRockApplicationConfig,
+            Application application) {
+        if (forgeRockApplicationConfig.getSigningKey() != null) {
+            try {
+                JwkMsKey signingJwkMsKey = convertJWKToJwkMSKey(forgeRockApplicationConfig.getSigningKey());
+                if (!application.getCurrentSigningKey().getKid().equals(signingJwkMsKey.getKid())) {
+                    log.debug("Update the signing key for application {}", name);
+                    application.getKeys().put(signingJwkMsKey.getKid(), signingJwkMsKey);
+                    application.getCurrentSigningKey().setValidityWindowStop(DateTime.now());
+                    application.setCurrentSignKid(signingJwkMsKey.getKid());
+                } else {
+                    log.debug("Same kid, no need to upgrade the signing key for application {}", name);
+                }
+            } catch (ParseException e) {
+                log.warn("Can't parse signing JWK {} for {} => Skipping this key",
+                        forgeRockApplicationConfig.getSigningKey(), name, e);
+            }
+        }
+
+        if (forgeRockApplicationConfig.getEncryptionKey() != null) {
+            try {
+                JwkMsKey encryptionJwkMsKey = convertJWKToJwkMSKey(forgeRockApplicationConfig.getEncryptionKey());
+                if (!application.getCurrentEncryptionKey().getKid().equals(encryptionJwkMsKey.getKid())) {
+                    log.debug("Update the encryption key for application {}", name);
+                    application.getKeys().put(encryptionJwkMsKey.getKid(), encryptionJwkMsKey);
+                    application.getCurrentEncryptionKey().setValidityWindowStop(DateTime.now());
+                    application.setCurrentEncKid(encryptionJwkMsKey.getKid());
+                } else {
+                    log.debug("Same kid, no need to upgrade the encryption key for application {}", name);
+                }
+            } catch (ParseException e) {
+                log.warn("Can't parse encryption JWK {} for {} => Skipping this key",
+                        forgeRockApplicationConfig.getSigningKey(), name, e);
+            }
+        }
+
+        if (forgeRockApplicationConfig.getTransportKey() != null) {
+            try {
+                JwkMsKey transportJwkMsKey = convertJWKToJwkMSKey(forgeRockApplicationConfig.getTransportKey());
+                if (!application.getCurrentTransportKey().getKid().equals(transportJwkMsKey.getKid())) {
+                    log.debug("Update the transport key for application {}", name);
+                    application.getTransportKeys().put(transportJwkMsKey.getKid(), transportJwkMsKey);
+                    application.setCurrentTransportKid(transportJwkMsKey.getKid());
+                    application.getCurrentEncryptionKey().setValidityWindowStop(DateTime.now());
+                    application.setCurrentTransportKeyHash(transportJwkMsKey.getJwk().getX509CertSHA256Thumbprint().toString());
+                } else {
+                    log.debug("Same kid, no need to upgrade the transport key for application {}", name);
+                }
+            } catch (ParseException e) {
+                log.warn("Can't parse transport JWK {} for {} => Skipping this key",
+                        forgeRockApplicationConfig.getSigningKey(), name, e);
+            }
+        }
+        return applicationsRepository.save(application);
+    }
+
+    private JwkMsKey convertJWKToJwkMSKey(String jwkSerialised) throws ParseException {
+        JWK jwk = JWK.parse(jwkSerialised);
+        JwkMsKey jwkMsKey = new JwkMsKey();
+        jwkMsKey.setJwk(jwk);
+        jwkMsKey.setAlgorithm(jwk.getAlgorithm());
+        jwkMsKey.setKeyUse(jwk.getKeyUse());
+        jwkMsKey.setKid(jwk.getKeyID());
+        jwkMsKey.setKeystoreAlias(jwk.getKeyID());
+        jwkMsKey.setValidityWindowStart(DateTime.now());
+        jwkMsKey.setValidityWindowStop(DateTime.now().plusYears(3));
+        jwkMsKey.setCaId(jwk.getParsedX509CertChain().get(0).getIssuerX500Principal().getName());
+        return jwkMsKey;
     }
 }
