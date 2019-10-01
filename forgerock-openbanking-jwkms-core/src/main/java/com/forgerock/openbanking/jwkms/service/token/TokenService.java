@@ -7,8 +7,8 @@
  */
 package com.forgerock.openbanking.jwkms.service.token;
 
+import com.forgerock.openbanking.constants.OpenBankingConstants;
 import com.forgerock.openbanking.core.config.ApplicationConfiguration;
-import com.forgerock.openbanking.core.model.OBJwtHeaderClaims;
 import com.forgerock.openbanking.core.utils.JwtUtils;
 import com.forgerock.openbanking.jwt.exceptions.InvalidTokenException;
 import com.forgerock.openbanking.jwt.model.SigningRequest;
@@ -17,12 +17,7 @@ import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
-import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.KeyType;
-import com.nimbusds.jose.jwk.OctetSequenceKey;
-import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.*;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.SignedJWT;
 import org.slf4j.Logger;
@@ -59,7 +54,7 @@ public class TokenService {
     public void validateDetachedToken(SignedJWT jws, ApplicationConfiguration from, ApplicationConfiguration to)
             throws InvalidTokenException {
         validateToken(jws, from, to,
-                (jwt) -> (String) jwt.getHeader().getCustomParam(OBJwtHeaderClaims.OB_ISS),
+                (jwt) -> (String) jwt.getHeader().getCustomParam(OpenBankingConstants.OBJwtHeaderClaims.OB_ISS),
                 SigningRequest.DEFAULT_SUPPORT_CRIT_CLAIMS
         );
     }

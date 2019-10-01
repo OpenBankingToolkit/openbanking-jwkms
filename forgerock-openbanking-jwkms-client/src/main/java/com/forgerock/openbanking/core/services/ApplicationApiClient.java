@@ -8,8 +8,8 @@
 package com.forgerock.openbanking.core.services;
 
 import com.forgerock.openbanking.core.model.Application;
-import com.forgerock.openbanking.core.model.ApplicationIdentity;
 import com.forgerock.openbanking.core.model.CertificateAuthority;
+import com.forgerock.openbanking.model.ApplicationIdentity;
 import com.nimbusds.jose.jwk.JWK;
 
 public interface ApplicationApiClient {

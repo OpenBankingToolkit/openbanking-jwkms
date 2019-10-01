@@ -14,11 +14,9 @@ import com.forgerock.openbanking.core.model.ValidJwtResponse;
 import com.forgerock.openbanking.jwt.exceptions.InvalidTokenException;
 import com.forgerock.openbanking.jwt.model.CreateDetachedJwtResponse;
 import com.forgerock.openbanking.jwt.model.SigningRequest;
+import com.forgerock.openbanking.jwt.model.ValidDetachedJwtResponse;
 import com.forgerock.openbanking.jwt.services.CryptoApiClient;
-import com.forgerock.openbanking.ssl.model.csr.CSRGenerationResponse;
-import com.forgerock.openbanking.ssl.model.csr.CSRImportPemsRequest;
 import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
@@ -27,10 +25,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -272,8 +271,8 @@ public class CryptoApiClientImpl implements CryptoApiClient {
      * @throws InvalidTokenException the JWS is invalid
      */
     @Override
-    public void validateJws(String serializedJws, String expectedIssuerId) throws InvalidTokenException {
-        validateJwsWithExpectedAudience(serializedJws, null, expectedIssuerId);
+    public SignedJWT validateJws(String serializedJws, String expectedIssuerId) throws InvalidTokenException, ParseException {
+        return validateJwsWithExpectedAudience(serializedJws, null, expectedIssuerId);
     }
 
     /**
@@ -281,9 +280,10 @@ public class CryptoApiClientImpl implements CryptoApiClient {
      * @param serializedJws the jws serialized
      * @param expectedIssuerId the expected issuer ID
      * @throws InvalidTokenException the JWS is invalid
+     * @return
      */
     @Override
-    public void validateJwsWithExpectedAudience(String serializedJws, String expectedAudienceId, String expectedIssuerId) throws InvalidTokenException {
+    public SignedJWT validateJwsWithExpectedAudience(String serializedJws, String expectedAudienceId, String expectedIssuerId) throws InvalidTokenException, ParseException {
         HttpHeaders headers = new HttpHeaders();
         headers.add("expectedIssuerId", expectedIssuerId);
         if (expectedAudienceId != null) {
@@ -298,6 +298,7 @@ public class CryptoApiClientImpl implements CryptoApiClient {
         if (!response.isValid) {
             throw new InvalidTokenException(response.message);
         }
+        return SignedJWT.parse(response.getOriginalJWS());
     }
 
     /**
@@ -308,13 +309,13 @@ public class CryptoApiClientImpl implements CryptoApiClient {
      * @throws InvalidTokenException the JWS is invalid
      */
     @Override
-    public void validateJws(String serializedJws, String expectedIssuerId, String jwkUri) throws InvalidTokenException {
-        validateJws(serializedJws, null, expectedIssuerId, jwkUri);
+    public SignedJWT validateJws(String serializedJws, String expectedIssuerId, String jwkUri) throws InvalidTokenException, ParseException {
+        return validateJws(serializedJws, null, expectedIssuerId, jwkUri);
     }
 
 
     @Override
-    public void validateJwsWithJWK(String serializedJws, String expectedIssuerId, String jwk) throws InvalidTokenException {
+    public SignedJWT validateJwsWithJWK(String serializedJws, String expectedIssuerId, String jwk) throws InvalidTokenException, ParseException {
         HttpHeaders headers = new HttpHeaders();
         if (expectedIssuerId != null) {
             headers.add("expectedIssuerId", expectedIssuerId);
@@ -330,6 +331,7 @@ public class CryptoApiClientImpl implements CryptoApiClient {
             if (!response.isValid) {
                 throw new InvalidTokenException(response.message);
             }
+            return SignedJWT.parse(response.getOriginalJWS());
         } catch (HttpClientErrorException e) {
             LOGGER.debug("Could not validate jws {} because of an http error {}", serializedJws, e.getResponseBodyAsString(), e);
             throw new InvalidTokenException(e.getResponseBodyAsString());
@@ -345,8 +347,8 @@ public class CryptoApiClientImpl implements CryptoApiClient {
      * @throws InvalidTokenException the JWS is invalid
      */
     @Override
-    public void validateJws(String serializedJws, String expectedAudienceId, String expectedIssuerId, String jwkUri)
-            throws InvalidTokenException {
+    public SignedJWT validateJws(String serializedJws, String expectedAudienceId, String expectedIssuerId, String jwkUri)
+            throws InvalidTokenException, ParseException {
         HttpHeaders headers = new HttpHeaders();
         if (expectedIssuerId != null) {
             headers.add("expectedIssuerId", expectedIssuerId);
@@ -362,6 +364,7 @@ public class CryptoApiClientImpl implements CryptoApiClient {
             if (!response.isValid) {
                 throw new InvalidTokenException(response.message);
             }
+            return SignedJWT.parse(response.getOriginalJWS());
         } catch (HttpClientErrorException e) {
             LOGGER.debug("Could not validate jws {} because of an http error {}", serializedJws, e.getResponseBodyAsString(), e);
             throw new InvalidTokenException(e.getResponseBodyAsString());
@@ -369,8 +372,8 @@ public class CryptoApiClientImpl implements CryptoApiClient {
     }
 
     @Override
-    public void validateDetachedJWS(String jwsDetachedSignature, Object body, String expectedAudienceId, String expectedIssuerId, String jwkUri)
-            throws InvalidTokenException {
+    public ValidDetachedJwtResponse validateDetachedJWS(String jwsDetachedSignature, Object body, String expectedAudienceId, String expectedIssuerId, String jwkUri)
+            throws InvalidTokenException, ParseException {
         HttpHeaders headers = new HttpHeaders();
         if (expectedIssuerId != null) {
             headers.add("expectedIssuerId", expectedIssuerId);
@@ -383,11 +386,12 @@ public class CryptoApiClientImpl implements CryptoApiClient {
         }
 
         try {
-            ValidJwtResponse response = restTemplate.exchange(jwkmsRoot + "api/crypto/validateDetachedJWSWithJwkUri", HttpMethod.POST, request,
-                    ValidJwtResponse.class).getBody();
+            ValidDetachedJwtResponse response = restTemplate.exchange(jwkmsRoot + "api/crypto/validateDetachedJWSWithJwkUri", HttpMethod.POST, request,
+                    ValidDetachedJwtResponse.class).getBody();
             if (!response.isValid) {
                 throw new InvalidTokenException(response.message);
             }
+            return response;
         } catch (HttpClientErrorException e) {
             LOGGER.debug("Could not validate jws {} because of an http error {}", body, e.getResponseBodyAsString(), e);
             throw new InvalidTokenException(e.getResponseBodyAsString());
@@ -395,7 +399,7 @@ public class CryptoApiClientImpl implements CryptoApiClient {
     }
 
     @Override
-    public void validateDetachedJWSWithJWK(String jwsDetachedSignature, Object body, String expectedAudienceId, String expectedIssuerId, JWK jwk)
+    public ValidDetachedJwtResponse validateDetachedJWSWithJWK(String jwsDetachedSignature, Object body, String expectedAudienceId, String expectedIssuerId, JWK jwk)
             throws InvalidTokenException {
         HttpHeaders headers = new HttpHeaders();
         if (expectedIssuerId != null) {
@@ -409,11 +413,12 @@ public class CryptoApiClientImpl implements CryptoApiClient {
         }
 
         try {
-            ValidJwtResponse response = restTemplate.exchange(jwkmsRoot + "api/crypto/validateDetachedJWSWithJWK", HttpMethod.POST, request,
-                    ValidJwtResponse.class).getBody();
+            ValidDetachedJwtResponse response = restTemplate.exchange(jwkmsRoot + "api/crypto/validateDetachedJWSWithJWK", HttpMethod.POST, request,
+                    ValidDetachedJwtResponse.class).getBody();
             if (!response.isValid) {
                 throw new InvalidTokenException(response.message);
             }
+            return response;
         } catch (HttpClientErrorException e) {
             LOGGER.debug("Could not validate jws {} because of an http error {}", body, e.getResponseBodyAsString(), e);
             throw new InvalidTokenException(e.getResponseBodyAsString());
@@ -440,54 +445,4 @@ public class CryptoApiClientImpl implements CryptoApiClient {
         }
         return signedAccessToken;
     }
-
-    /**
-     * Generate CSRs
-     */
-    @Override
-    public CSRGenerationResponse generateCSR(String CN, String OU, String O) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-        MultiValueMap<String, String> map= new LinkedMultiValueMap<String, String>();
-        map.add("CN", CN);
-        map.add("OU", OU);
-        map.add("O", O);
-
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
-
-        ResponseEntity<CSRGenerationResponse> response = restTemplate.postForEntity( jwkmsRoot + "api/crypto/generateCSR",
-                request , CSRGenerationResponse.class );
-        return response.getBody();
-    }
-
-    /**
-     * Import CSRs
-     */
-    @Override
-    public CSRGenerationResponse importCSRResponse(CSRImportPemsRequest csrImportPemsRequest) {
-        HttpHeaders headers = new HttpHeaders();
-        HttpEntity<CSRImportPemsRequest> request = new HttpEntity<>(csrImportPemsRequest, headers);
-        return restTemplate.postForObject(jwkmsRoot + "api/crypto/importCSRResponse", request,
-                CSRGenerationResponse.class);
-    }
-
-    /**
-     * Export Pem
-     */
-    @Override
-    public String exportAsPem(KeyUse keyUse) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-        MultiValueMap<String, String> map= new LinkedMultiValueMap<String, String>();
-        map.add("keyUse", keyUse.identifier());
-
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
-
-        ResponseEntity<String> response = restTemplate.postForEntity( jwkmsRoot + "api/crypto/exportAsPem",
-                request , String.class);
-        return response.getBody();
-    }
-
 }

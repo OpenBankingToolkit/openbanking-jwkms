@@ -9,13 +9,13 @@ package com.forgerock.openbanking.jwkms.service.crypto;
 
 import com.forgerock.openbanking.core.model.Application;
 import com.forgerock.openbanking.core.model.JwkMsKey;
-import com.forgerock.openbanking.core.model.ValidDetachedJwtResponse;
 import com.forgerock.openbanking.jwkms.config.JwkMsConfigurationProperties;
 import com.forgerock.openbanking.jwkms.repository.ApplicationsRepository;
 import com.forgerock.openbanking.jwkms.service.application.ApplicationService;
 import com.forgerock.openbanking.jwkms.service.jwkstore.JwkStoreService;
 import com.forgerock.openbanking.jwkms.service.token.TokenService;
 import com.forgerock.openbanking.jwt.model.CreateDetachedJwtResponse;
+import com.forgerock.openbanking.jwt.model.ValidDetachedJwtResponse;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.nimbusds.jose.JOSEException;
@@ -47,9 +47,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.forgerock.openbanking.jwkms.JwkTestHelper.jwkToJwkMsKey;
-import static com.forgerock.openbanking.jwkms.JwkTestHelper.stringToJWK;
-import static com.forgerock.openbanking.jwkms.JwkTestHelper.utf8FileToString;
+import static com.forgerock.openbanking.jwkms.JwkTestHelper.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;

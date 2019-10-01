@@ -7,8 +7,10 @@
  */
 package com.forgerock.openbanking.jwkms.repository;
 
+import com.forgerock.openbanking.upgrade.EntitiesVersionProvider;
 import com.forgerock.openbanking.upgrade.model.version.EntitiesVersion;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-public interface EntitiesVersionRepository extends MongoRepository<EntitiesVersion, String> {
+
+public interface EntitiesVersionRepository extends MongoRepository<EntitiesVersion, String>, EntitiesVersionProvider {
 }

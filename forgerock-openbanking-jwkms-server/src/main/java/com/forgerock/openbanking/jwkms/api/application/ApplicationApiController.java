@@ -9,9 +9,7 @@ package com.forgerock.openbanking.jwkms.api.application;
 
 import com.forgerock.cert.utils.CertificateConfiguration;
 import com.forgerock.openbanking.core.model.Application;
-import com.forgerock.openbanking.core.model.ApplicationIdentity;
 import com.forgerock.openbanking.core.model.ForgeRockApplication;
-import com.forgerock.openbanking.core.model.JwkMsKey;
 import com.forgerock.openbanking.jwkms.config.JwkMsConfigurationProperties;
 import com.forgerock.openbanking.jwkms.repository.ApplicationsRepository;
 import com.forgerock.openbanking.jwkms.repository.ForgeRockApplicationsRepository;
@@ -19,22 +17,17 @@ import com.forgerock.openbanking.jwkms.repository.SoftwareStatementRepository;
 import com.forgerock.openbanking.jwkms.service.application.ApplicationService;
 import com.forgerock.openbanking.jwkms.service.crypto.CryptoService;
 import com.forgerock.openbanking.jwkms.service.keystore.JwkKeyStoreService;
+import com.forgerock.openbanking.jwt.services.CryptoApiClient;
+import com.forgerock.openbanking.model.ApplicationIdentity;
 import com.forgerock.openbanking.model.SoftwareStatement;
 import com.forgerock.openbanking.ssl.model.ForgeRockApplicationResponse;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.util.Base64;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
 import java.security.Principal;
 import java.text.ParseException;
 import java.util.List;
@@ -65,6 +58,8 @@ public class ApplicationApiController implements ApplicationApi {
     private JwkKeyStoreService jwkKeyStoreService;
     @Autowired
     private SoftwareStatementRepository softwareStatementRepository;
+    @Autowired
+    private CryptoApiClient cryptoApiClient;
 
     @Override
     public ResponseEntity<List<Application>> getAllApplication() {
@@ -200,20 +195,12 @@ public class ApplicationApiController implements ApplicationApi {
         if (CURRENT.equals(appId)) {
             appId = principal.getName();
         }
-        Optional<Application> isApplication = applicationsRepository.findById(appId);
-        if (!isApplication.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
+        try {
+            return ResponseEntity.ok(cryptoApiClient.getKey(appId, keyId).toJSONString());
+        } catch (IllegalArgumentException | ParseException e) {
+            log.debug("Couldn't read key {} from app {}", keyId, appId, e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
-        Application application = isApplication.get();
-
-        if (CURRENT_SIGNING.equals(keyId)) {
-            keyId = application.getCurrentSignKid();
-        } else if (CURRENT_ENCRYPTION.equals(keyId)) {
-            keyId = application.getCurrentEncKid();
-        } else if (CURRENT_TRANSPORT.equals(keyId)) {
-            keyId = application.getCurrentTransportKid();
-        }
-        return ResponseEntity.ok(application.getKey(keyId).getJwk().toJSONString());
     }
 
 
@@ -226,47 +213,11 @@ public class ApplicationApiController implements ApplicationApi {
         if (CURRENT.equals(appId)) {
             appId = principal.getName();
         }
-        Optional<Application> isApplication = applicationsRepository.findById(appId);
-        if (!isApplication.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
-        }
-        Application application = isApplication.get();
-        if (CURRENT_SIGNING.equals(keyId)) {
-            keyId = application.getCurrentSignKid();
-        } else if (CURRENT_ENCRYPTION.equals(keyId)) {
-            keyId = application.getCurrentEncKid();
-        } else if (CURRENT_TRANSPORT.equals(keyId)) {
-            keyId = application.getCurrentTransportKid();
-        }
-
-        PrintStream ps = null;
-        ByteArrayOutputStream bs = null;
         try {
-            JwkMsKey key = application.getKey(keyId);
-            if (key != null) {
-                bs = new ByteArrayOutputStream();
-                ps = new PrintStream(bs);
-                Base64 base64Cert = key.getJwk().getX509CertChain().get(0);
-
-                ps.println(BEGIN_CERT);
-                String certEncoded = Base64.encode(base64Cert.decode()).toString().replaceAll("(.{64})", "$1\n");
-                ps.println(certEncoded);
-                ps.println(END_CERT);
-                return ResponseEntity.ok(new String(bs.toByteArray()));
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Key '" + keyId + "' can't be found.");
-            }
-        } finally {
-            if (ps != null) {
-                ps.close();
-            }
-            if (bs != null) {
-                try {
-                    bs.close();
-                } catch (IOException e) {
-                    log.error("Couldn't close properly ByteArrayOutputStream", e);
-                }
-            }
+            return ResponseEntity.ok(cryptoApiClient.getPublicCert(appId, keyId));
+        } catch (IllegalArgumentException e) {
+            log.debug("Couldn't read key {} from app {}", keyId, appId, e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
@@ -280,55 +231,11 @@ public class ApplicationApiController implements ApplicationApi {
         if (CURRENT.equals(appId)) {
             appId = principal.getName();
         }
-        Optional<Application> isApplication = applicationsRepository.findById(appId);
-        if (!isApplication.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
-        }
-        Application application = isApplication.get();
-        if (CURRENT_SIGNING.equals(keyId)) {
-            keyId = application.getCurrentSignKid();
-        } else if (CURRENT_ENCRYPTION.equals(keyId)) {
-            keyId = application.getCurrentEncKid();
-        } else if (CURRENT_TRANSPORT.equals(keyId)) {
-            keyId = application.getCurrentTransportKid();
-        }
-
-        PrintStream ps = null;
-        ByteArrayOutputStream bs = null;
         try {
-            JwkMsKey key = application.getKey(keyId);
-            if (key != null) {
-                bs = new ByteArrayOutputStream();
-                ps = new PrintStream(bs);
-                ps.println("-----BEGIN PRIVATE KEY-----");
-                if (key.getJwk() instanceof RSAKey) {
-
-                    ps.print(Base64.encode(((RSAKey) key.getJwk()).toKeyPair().getPrivate().getEncoded())
-                            .toString().replaceAll("(.{64})", "$1\n"));
-                } else if (key.getJwk() instanceof ECKey) {
-                    ps.print(Base64.encode(((ECKey) key.getJwk()).toKeyPair().getPrivate().getEncoded())
-                            .toString().replaceAll("(.{64})", "$1\n"));
-                }
-                ps.print("\n");
-                ps.println("-----END PRIVATE KEY-----");
-                return ResponseEntity.ok(new String(bs.toByteArray()));
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Key '" + keyId + "' can't be found.");
-            }
-        } catch (JOSEException e) {
-            log.error("Couldn't not read keypair from JWK", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Key '" + keyId + "' can't be loaded properly.");
-        } finally {
-            if (ps != null) {
-                ps.close();
-            }
-            if (bs != null) {
-                try {
-                    bs.close();
-                } catch (IOException e) {
-                    log.error("Couldn't close properly ByteArrayOutputStream", e);
-                }
-            }
+            return ResponseEntity.ok(cryptoApiClient.getPrivateCert(appId, keyId));
+        } catch (IllegalArgumentException e) {
+            log.debug("Couldn't read key {} from app {}", keyId, appId, e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 

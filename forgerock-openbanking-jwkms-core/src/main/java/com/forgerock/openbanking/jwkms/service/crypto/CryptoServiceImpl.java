@@ -7,11 +7,10 @@
  */
 package com.forgerock.openbanking.jwkms.service.crypto;
 
+import com.forgerock.openbanking.constants.OpenBankingConstants;
 import com.forgerock.openbanking.core.config.ApplicationConfiguration;
 import com.forgerock.openbanking.core.model.Application;
 import com.forgerock.openbanking.core.model.JwkMsKey;
-import com.forgerock.openbanking.core.model.OBJwtHeaderClaims;
-import com.forgerock.openbanking.core.model.ValidDetachedJwtResponse;
 import com.forgerock.openbanking.core.utils.JwtUtils;
 import com.forgerock.openbanking.jwkms.config.JwkMsConfigurationProperties;
 import com.forgerock.openbanking.jwkms.repository.ApplicationsRepository;
@@ -21,28 +20,14 @@ import com.forgerock.openbanking.jwkms.service.token.TokenService;
 import com.forgerock.openbanking.jwt.exceptions.InvalidTokenException;
 import com.forgerock.openbanking.jwt.model.CreateDetachedJwtResponse;
 import com.forgerock.openbanking.jwt.model.SigningRequest;
-import com.nimbusds.jose.EncryptionMethod;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWEAlgorithm;
-import com.nimbusds.jose.JWEDecrypter;
-import com.nimbusds.jose.JWEHeader;
-import com.nimbusds.jose.JWEObject;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSObject;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.Payload;
+import com.forgerock.openbanking.jwt.model.ValidDetachedJwtResponse;
+import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.crypto.bc.BouncyCastleProviderSingleton;
-import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.KeyType;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.*;
 import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -63,14 +48,7 @@ import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class CryptoServiceImpl implements CryptoService {
@@ -284,20 +262,20 @@ public class CryptoServiceImpl implements CryptoService {
                 .keyID(currentSigningKey.getKid());
         List<String> customHeaderClaims = new ArrayList<>();
         if (signingRequest.getCustomHeaderClaims().isIncludeB64()) {
-            headerBuilder.customParam(OBJwtHeaderClaims.B64, false);
-            customHeaderClaims.add(OBJwtHeaderClaims.B64);
+            headerBuilder.customParam(OpenBankingConstants.OBJwtHeaderClaims.B64, false);
+            customHeaderClaims.add(OpenBankingConstants.OBJwtHeaderClaims.B64);
         }
         if (signingRequest.getCustomHeaderClaims().isIncludeOBIss()) {
-            headerBuilder.customParam(OBJwtHeaderClaims.OB_ISS, issuerId);
-            customHeaderClaims.add(OBJwtHeaderClaims.OB_ISS);
+            headerBuilder.customParam(OpenBankingConstants.OBJwtHeaderClaims.OB_ISS, issuerId);
+            customHeaderClaims.add(OpenBankingConstants.OBJwtHeaderClaims.OB_ISS);
         }
         if (signingRequest.getCustomHeaderClaims().isIncludeOBIat()) {
-            headerBuilder.customParam(OBJwtHeaderClaims.OB_IAT, DateUtils.toSecondsSinceEpoch(new Date()));
-            customHeaderClaims.add(OBJwtHeaderClaims.OB_IAT);
+            headerBuilder.customParam(OpenBankingConstants.OBJwtHeaderClaims.OB_IAT, DateUtils.toSecondsSinceEpoch(new Date()));
+            customHeaderClaims.add(OpenBankingConstants.OBJwtHeaderClaims.OB_IAT);
         }
         if (signingRequest.getCustomHeaderClaims().getTan() != null) {
-            headerBuilder.customParam(OBJwtHeaderClaims.OB_TAN, signingRequest.getCustomHeaderClaims().getTan());
-            customHeaderClaims.add(OBJwtHeaderClaims.OB_TAN);
+            headerBuilder.customParam(OpenBankingConstants.OBJwtHeaderClaims.OB_TAN, signingRequest.getCustomHeaderClaims().getTan());
+            customHeaderClaims.add(OpenBankingConstants.OBJwtHeaderClaims.OB_TAN);
         }
         if (signingRequest.getCustomHeaderClaims().isIncludeCrit() && !customHeaderClaims.isEmpty()) {
             headerBuilder.criticalParams(new HashSet<>(customHeaderClaims));
@@ -443,7 +421,7 @@ public class CryptoServiceImpl implements CryptoService {
 
     @Override
     public ValidDetachedJwtResponse validateDetachedJwS(SignedJWT signedJWT, String expectedIssuerId) {
-        String issuerId = (String) signedJWT.getHeader().getCustomParam(OBJwtHeaderClaims.OB_ISS);
+        String issuerId = (String) signedJWT.getHeader().getCustomParam(OpenBankingConstants.OBJwtHeaderClaims.OB_ISS);
         ValidDetachedJwtResponse.ValidDetachedJwtResponseBuilder builder = ValidDetachedJwtResponse.builder()
                 .reconstructJWS(signedJWT.serialize());
 

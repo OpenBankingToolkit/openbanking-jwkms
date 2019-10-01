@@ -13,19 +13,19 @@ import com.forgerock.openbanking.analytics.model.entries.JwtsGenerationEntry;
 import com.forgerock.openbanking.analytics.model.entries.JwtsValidationEntry;
 import com.forgerock.openbanking.analytics.services.MetricService;
 import com.forgerock.openbanking.core.model.Application;
-import com.forgerock.openbanking.core.model.ValidDetachedJwtResponse;
 import com.forgerock.openbanking.core.model.ValidJwtResponse;
 import com.forgerock.openbanking.jwkms.repository.ApplicationsRepository;
 import com.forgerock.openbanking.jwkms.service.application.ApplicationService;
 import com.forgerock.openbanking.jwkms.service.crypto.CryptoService;
 import com.forgerock.openbanking.jwt.exceptions.InvalidTokenException;
 import com.forgerock.openbanking.jwt.model.SigningRequest;
+import com.forgerock.openbanking.jwt.model.ValidDetachedJwtResponse;
+import com.forgerock.openbanking.jwt.services.CryptoApiClient;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
@@ -63,29 +63,22 @@ public class CryptoApiController implements CryptoApi {
     private MetricService metricService;
     @Autowired
     private ObjectMapper mapper;
+    @Autowired
+    private CryptoApiClient cryptoApiClient;
 
     private Pattern jwsDetachedSignaturePattern = Pattern.compile("(.*\\.)(\\..*)");
 
     @Override
     public ResponseEntity<String> signClaims(
             @RequestHeader(value = "issuerId", required = false) String issuerId,
-            @RequestHeader(value = "includeKey", defaultValue = "false", required = false) boolean includeKey,
             @RequestBody String claimsSetJsonSerialised,
             Principal principal) {
         LOGGER.debug("Sign the claims {} for app {}", claimsSetJsonSerialised, principal.getName());
 
+
         try {
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder(JWTClaimsSet.parse(claimsSetJsonSerialised)).build();
-            Application application = applicationsRepository.findById(principal.getName()).get();
-            //Metric
-            metricService.addJwtsGenerationEntry(
-                    JwtsGenerationEntry.builder()
-                    .appId(application.getIssuerId())
-                    .date(DateTime.now())
-                    .jwtType(JwtsGenerationEntry.JwtType.JWS)
-                    .build());
-
-            return ResponseEntity.ok(cryptoService.sign(issuerId, claimsSet, application, includeKey).serialize());
+            return ResponseEntity.ok(cryptoApiClient.signClaims(issuerId, claimsSet));
         } catch (ParseException e) {
             LOGGER.error("Couldn't parse the claims received '{}'", claimsSetJsonSerialised, e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Couldn't parse the claims received: " + claimsSetJsonSerialised);
@@ -131,26 +124,17 @@ public class CryptoApiController implements CryptoApi {
     public ResponseEntity<String> signAndEncryptJwt(
             @RequestHeader(value = "issuerId", required = false) String issuerId,
             @RequestHeader(value = "jwkUri") String jwkUri,
-            @RequestHeader(value = "includeKey", defaultValue = "false", required = false) boolean includeKey,
             @RequestBody String claimsSetJsonSerialised,
             Principal principal) {
         LOGGER.debug("Sign the claims {} and encrypt it with jwk uri {} for app {}",
                 claimsSetJsonSerialised, jwkUri, principal.getName());
+        //Metric
+        JwtsValidationEntry jwtsValidationEntry = new JwtsValidationEntry();
+        jwtsValidationEntry.setDate(DateTime.now());
 
         try {
-            JWTClaimsSet claimsSet = new JWTClaimsSet.Builder(JWTClaimsSet.parse(claimsSetJsonSerialised))
-                    .build();
-            Application application = applicationsRepository.findById(principal.getName()).get();
-
-            //Metric
-            JwtsGenerationEntry jwtsGenerationEntry = new JwtsGenerationEntry();
-            jwtsGenerationEntry.setAppId(application.getIssuerId());
-            jwtsGenerationEntry.setDate(DateTime.now());
-            jwtsGenerationEntry.setJwtType(JwtsGenerationEntry.JwtType.JWE_JWS);
-            metricService.addJwtsGenerationEntry(jwtsGenerationEntry);
-
-            return ResponseEntity.ok(cryptoService.signAndEncrypt(issuerId, claimsSet,
-                    getJwkForEncryption(jwkUri), application, includeKey).serialize());
+            JWTClaimsSet claimsSet = new JWTClaimsSet.Builder(JWTClaimsSet.parse(claimsSetJsonSerialised)).build();
+            return ResponseEntity.ok(cryptoApiClient.signAndEncryptClaims(issuerId, claimsSet, jwkUri));
         } catch (JOSEException | ParseException e) {
             LOGGER.error("Couldn't parse the claims received '{}'", claimsSetJsonSerialised, e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Couldn't parse the claims received: " + claimsSetJsonSerialised);
@@ -170,23 +154,14 @@ public class CryptoApiController implements CryptoApi {
             Principal principal) {
         LOGGER.debug("Sign the claims {} and encrypt it for the app {} by the app {}",
                 claimsSetJsonSerialised, obAppId, principal.getName());
+        //Metric
+        JwtsValidationEntry jwtsValidationEntry = new JwtsValidationEntry();
+        jwtsValidationEntry.setDate(DateTime.now());
 
         try {
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder(JWTClaimsSet.parse(claimsSetJsonSerialised))
                     .build();
-            Application applicationForIssuer = applicationsRepository.findById(principal.getName()).get();
-            Application applicationForAudience = applicationsRepository.findById(principal.getName()).get();
-
-            //Metric
-            JwtsGenerationEntry jwtsGenerationEntry = new JwtsGenerationEntry();
-            jwtsGenerationEntry.setAppId(applicationForIssuer.getIssuerId());
-            jwtsGenerationEntry.setDate(DateTime.now());
-            jwtsGenerationEntry.setJwtType(JwtsGenerationEntry.JwtType.JWE_JWS);
-            metricService.addJwtsGenerationEntry(jwtsGenerationEntry);
-
-            return ResponseEntity.ok(cryptoService.signAndEncrypt(issuerId, claimsSet,
-                    getJwkForEncryption(cryptoService.getPublicJwks(applicationForAudience)), applicationForIssuer, includeKey)
-                    .serialize());
+            return ResponseEntity.ok(cryptoApiClient.signAndEncryptJwtForOBApp(issuerId, claimsSet, principal.getName()));
         } catch (JOSEException | ParseException e) {
             LOGGER.error("Couldn't parse the claims received '{}'", claimsSetJsonSerialised, e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Couldn't parse the claims received: " + claimsSetJsonSerialised);
@@ -202,13 +177,14 @@ public class CryptoApiController implements CryptoApi {
             @RequestHeader(value = "expectedAudienceId", required = false) String expectedAudienceId,
             @RequestBody String jweSerialized,
             Principal principal) {
-        LOGGER.debug("decrypt jwe {} by the app {}", jweSerialized, principal.getName());
-        try {
-            Application application = applicationsRepository.findById(principal.getName()).get();
 
-            SignedJWT jws = cryptoService.decrypt((EncryptedJWT) JWTParser.parse(jweSerialized), application);
-            return ResponseEntity.ok(jws.serialize());
-        } catch (ParseException e) {
+        LOGGER.debug("decrypt jwe {} by the app {}", jweSerialized, principal.getName());
+        //Metric
+        JwtsValidationEntry jwtsValidationEntry = new JwtsValidationEntry();
+        jwtsValidationEntry.setDate(DateTime.now());
+        try {
+            return ResponseEntity.ok(cryptoApiClient.decryptJwe(expectedAudienceId, jweSerialized).serialize());
+        } catch (JOSEException | ParseException e) {
             LOGGER.error("Couldn't parse jwe received '{}'", jweSerialized, e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Couldn't parse the jwe received");
         } catch (IllegalArgumentException e) {
@@ -278,18 +254,10 @@ public class CryptoApiController implements CryptoApi {
         jwtsValidationEntry.setDate(DateTime.now());
 
         try {
-            SignedJWT jws = (SignedJWT) JWTParser.parse(jwsSerialized);
-            if (expectedIssuerId != null && !jws.getJWTClaimsSet().getIssuer().equals(expectedIssuerId)) {
-                LOGGER.debug("JWS issuer id {} is not the one expected {}",
-                        jws.getJWTClaimsSet().getIssuer(), expectedIssuerId);
-                return ResponseEntity.status(HttpStatus.OK).body("Invalid issuer");
-            }
-            cryptoService.validate(jws, expectedAudienceId, application);
-
+            SignedJWT jws = cryptoApiClient.validateJwsWithExpectedAudience(jwsSerialized, expectedAudienceId, expectedIssuerId);
             //Metric
             jwtsValidationEntry.setWasValid(true);
             metricService.addJwtsValidationEntry(jwtsValidationEntry);
-
             return ResponseEntity.ok().body(ValidJwtResponse.valid(jws));
         } catch (ParseException e) {
             LOGGER.error("Couldn't parse jws received '{}'", jwsSerialized, e);
@@ -317,11 +285,13 @@ public class CryptoApiController implements CryptoApi {
         JwtsValidationEntry jwtsValidationEntry = new JwtsValidationEntry();
         jwtsValidationEntry.setDate(DateTime.now());
         try {
-            SignedJWT jws = (SignedJWT) JWTParser.parse(jwsSerialized);
-            cryptoService.validate(jws, expectedIssuerId, jwkUri);
+
+            SignedJWT jws = cryptoApiClient.validateJws(jwsSerialized, expectedAudienceId, expectedIssuerId, jwkUri);
+
             //Metric
             jwtsValidationEntry.setWasValid(true);
             metricService.addJwtsValidationEntry(jwtsValidationEntry);
+
             return ResponseEntity.ok().body(ValidJwtResponse.valid(jws));
         } catch ( IOException e) {
             LOGGER.error("Connection issue to '{}'", jwkUri, e);
@@ -353,11 +323,8 @@ public class CryptoApiController implements CryptoApi {
         JwtsValidationEntry jwtsValidationEntry = new JwtsValidationEntry();
         jwtsValidationEntry.setDate(DateTime.now());
 
-        String jwsSerialized = rebuildJWS(jwsDetachedSignature, bodySerialised);
-        LOGGER.debug("The JWS reconstruct from the detached signature: {}", jwsSerialized);
         try {
-            SignedJWT jws = (SignedJWT) JWTParser.parse(jwsSerialized);
-            ValidDetachedJwtResponse validDetachedJwtResponse = cryptoService.validateDetachedJwS(jws, expectedIssuerId, jwkUri);
+            ValidDetachedJwtResponse validDetachedJwtResponse = cryptoApiClient.validateDetachedJWS(jwsDetachedSignature, bodySerialised, expectedAudienceId, expectedIssuerId, jwkUri);
 
             //Metric
             jwtsValidationEntry.setWasValid(validDetachedJwtResponse.isValid);
@@ -368,11 +335,17 @@ public class CryptoApiController implements CryptoApi {
             LOGGER.error("Connection issue to '{}'", jwkUri, e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Connection issue to '" + jwkUri + "'");
         } catch (ParseException e) {
-            LOGGER.error("Couldn't parse jws received '{}'", jwsSerialized, e);
+            LOGGER.error("Couldn't parse rebuild jws", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Couldn't parse the jws received");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.OK).body(
                     ValidJwtResponse.invalid(e.getMessage()));
+        } catch (InvalidTokenException e) {
+            //Metric
+            jwtsValidationEntry.setWasValid(false);
+            metricService.addJwtsValidationEntry(jwtsValidationEntry);
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    ValidDetachedJwtResponse.invalid(e.getMessage()));
         }
     }
 
@@ -424,14 +397,21 @@ public class CryptoApiController implements CryptoApi {
             SignedJWT jws = (SignedJWT) JWTParser.parse(jwsSerialized);
             ValidDetachedJwtResponse validDetachedJwtResponse = cryptoService.validateDetachedJwSWithJWK(jws, expectedIssuerId, jwk);
 
+            cryptoApiClient.validateDetachedJWSWithJWK(jwsDetachedSignature, bodySerialised, expectedAudienceId, expectedIssuerId, JWK.parse(jwk));
             //Metric
             jwtsValidationEntry.setWasValid(validDetachedJwtResponse.isValid);
             metricService.addJwtsValidationEntry(jwtsValidationEntry);
 
             return ResponseEntity.ok().body(validDetachedJwtResponse);
-        } catch (ParseException e) {
+        } catch (ParseException | IOException e) {
             LOGGER.error("Couldn't parse jws received '{}'", jwsSerialized, e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Couldn't parse the jws received");
+        } catch (InvalidTokenException e) {
+            //Metric
+            jwtsValidationEntry.setWasValid(false);
+            metricService.addJwtsValidationEntry(jwtsValidationEntry);
+            return ResponseEntity.status(HttpStatus.OK).body(
+                    ValidDetachedJwtResponse.invalid(e.getMessage()));
         }
     }
 
