@@ -44,6 +44,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -198,8 +199,8 @@ public class CryptoAPIClientImpl implements CryptoApiClient {
      * @return JWS serialized
      */
     @Override
-    public String signClaims(String issuerId, JWTClaimsSet jwtClaimsSet) {
-        return signClaims(restTemplate, null, issuerId, jwtClaimsSet);
+    public String signClaims(String issuerId, JWTClaimsSet jwtClaimsSet, boolean includeKey) {
+        return signClaims(restTemplate, null, issuerId, jwtClaimsSet.toString(), "signClaims", includeKey);
     }
 
     /**
@@ -218,7 +219,7 @@ public class CryptoAPIClientImpl implements CryptoApiClient {
      */
     @Override
     public String signClaims(RestTemplate restTemplate, SigningRequest signingRequest, String issuerId, JWTClaimsSet jwtClaimsSet) {
-        return signClaims(restTemplate, signingRequest, issuerId, jwtClaimsSet.toString(), "signClaims");
+        return signClaims(restTemplate, signingRequest, issuerId, jwtClaimsSet.toString(), "signClaims", false);
     }
 
     @Override
@@ -252,8 +253,8 @@ public class CryptoAPIClientImpl implements CryptoApiClient {
         return restTemplate.postForObject(jwkmsRoot + "api/crypto/" + path, request, CreateDetachedJwtResponse.class);
     }
 
-    private String signClaims(RestTemplate restTemplate, SigningRequest signingRequest, String issuerId, String payload, String path)  {
-        String appId =  ((Principal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getName();
+    private String signClaims(RestTemplate restTemplate, SigningRequest signingRequest, String issuerId, String payload, String path, boolean includeKey)  {
+        String appId = getAppID();
         LOGGER.debug("Sign the claims {} for app {}", signingRequest, appId);
         Application application = getApplication(appId);
 
@@ -267,7 +268,7 @@ public class CryptoAPIClientImpl implements CryptoApiClient {
                             .jwtType(JwtsGenerationEntry.JwtType.JWS)
                             .build());
 
-            return cryptoService.sign(issuerId, claimsSet, application, false).serialize();
+            return cryptoService.sign(issuerId, claimsSet, application, includeKey).serialize();
         } catch (ParseException e) {
             LOGGER.error("Couldn't parse the claims received '{}'", payload, e);
             throw new RuntimeException("Couldn't parse the claims received: " + payload);
@@ -292,20 +293,18 @@ public class CryptoAPIClientImpl implements CryptoApiClient {
      */
     @Override
     public String signAndEncryptClaims(String issuerId, JWTClaimsSet jwtClaimsSet, String jwkUri) throws JOSEException {
+        String appId = getAppID();
+        Application application = getApplication(appId);
 
-            String appId = ((Principal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getName();
-            Application application = getApplication(appId);
+        //Metric
+        JwtsGenerationEntry jwtsGenerationEntry = new JwtsGenerationEntry();
+        jwtsGenerationEntry.setAppId(application.getIssuerId());
+        jwtsGenerationEntry.setDate(DateTime.now());
+        jwtsGenerationEntry.setJwtType(JwtsGenerationEntry.JwtType.JWE_JWS);
+        metricService.addJwtsGenerationEntry(jwtsGenerationEntry);
 
-            //Metric
-            JwtsGenerationEntry jwtsGenerationEntry = new JwtsGenerationEntry();
-            jwtsGenerationEntry.setAppId(application.getIssuerId());
-            jwtsGenerationEntry.setDate(DateTime.now());
-            jwtsGenerationEntry.setJwtType(JwtsGenerationEntry.JwtType.JWE_JWS);
-            metricService.addJwtsGenerationEntry(jwtsGenerationEntry);
-
-            return cryptoService.signAndEncrypt(issuerId, jwtClaimsSet,
-                    getJwkForEncryption(jwkUri), application, false).serialize();
-
+        return cryptoService.signAndEncrypt(issuerId, jwtClaimsSet,
+                getJwkForEncryption(jwkUri), application, false).serialize();
     }
 
     /**
@@ -327,8 +326,7 @@ public class CryptoAPIClientImpl implements CryptoApiClient {
      */
     @Override
     public String signAndEncryptJwtForOBApp(String issuerId, JWTClaimsSet jwtClaimsSet, String obAppId) throws JOSEException {
-
-        String appId = ((Principal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getName();
+        String appId = getAppID();
 
         Application applicationForIssuer = getApplication(appId);
         Application applicationForAudience = applicationForIssuer;
@@ -364,7 +362,7 @@ public class CryptoAPIClientImpl implements CryptoApiClient {
      */
     @Override
     public SignedJWT decryptJwe(String expectedAudienceId, String serializedJwe) throws ParseException {
-        String appId = ((Principal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getName();
+        String appId = getAppID();
         Application application = getApplication(appId);
 
         SignedJWT jws = cryptoService.decrypt((EncryptedJWT) JWTParser.parse(serializedJwe), application);
@@ -390,7 +388,7 @@ public class CryptoAPIClientImpl implements CryptoApiClient {
      */
     @Override
     public SignedJWT validateJwsWithExpectedAudience(String serializedJws, String expectedAudienceId, String expectedIssuerId) throws ParseException, InvalidTokenException {
-        String appId = ((Principal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getName();
+        String appId = getAppID();
         Application application = getApplication(appId);
 
         SignedJWT jws = (SignedJWT) JWTParser.parse(serializedJws);
@@ -539,5 +537,9 @@ public class CryptoAPIClientImpl implements CryptoApiClient {
             throw new IllegalArgumentException("'" + jwsDetachedSignature + "' is not a detached signature");
         }
         return jwsDetachedSignatureMatcher.group(1) + jwtPayloadEncoded + jwsDetachedSignatureMatcher.group(2);
+    }
+
+    private String getAppID() {
+        return ((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername();
     }
 }

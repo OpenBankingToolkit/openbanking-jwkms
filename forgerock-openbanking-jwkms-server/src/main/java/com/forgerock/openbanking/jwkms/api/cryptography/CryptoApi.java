@@ -55,6 +55,7 @@ public interface CryptoApi {
             method = RequestMethod.POST)
     ResponseEntity<String> signClaims(
             @RequestHeader(value = "issuerId", required = false) String issuerId,
+            @RequestHeader(value = "includeKey", defaultValue = "false", required = false) boolean includeKey,
             @RequestBody String claimsSetJsonSerialised,
             Principal principal);
 

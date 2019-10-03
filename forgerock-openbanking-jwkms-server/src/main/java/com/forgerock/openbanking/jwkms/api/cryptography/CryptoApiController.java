@@ -71,6 +71,7 @@ public class CryptoApiController implements CryptoApi {
     @Override
     public ResponseEntity<String> signClaims(
             @RequestHeader(value = "issuerId", required = false) String issuerId,
+            @RequestHeader(value = "includeKey", defaultValue = "false", required = false) boolean includeKey,
             @RequestBody String claimsSetJsonSerialised,
             Principal principal) {
         LOGGER.debug("Sign the claims {} for app {}", claimsSetJsonSerialised, principal.getName());
@@ -78,7 +79,7 @@ public class CryptoApiController implements CryptoApi {
 
         try {
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder(JWTClaimsSet.parse(claimsSetJsonSerialised)).build();
-            return ResponseEntity.ok(cryptoApiClient.signClaims(issuerId, claimsSet));
+            return ResponseEntity.ok(cryptoApiClient.signClaims(issuerId, claimsSet, includeKey));
         } catch (ParseException e) {
             LOGGER.error("Couldn't parse the claims received '{}'", claimsSetJsonSerialised, e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Couldn't parse the claims received: " + claimsSetJsonSerialised);

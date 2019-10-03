@@ -99,8 +99,8 @@ public class CryptoApiClientImpl implements CryptoApiClient {
      * @return JWS serialized
      */
     @Override
-    public String signClaims(String issuerId, JWTClaimsSet jwtClaimsSet) {
-        return signClaims(restTemplate, null, issuerId, jwtClaimsSet);
+    public String signClaims(String issuerId, JWTClaimsSet jwtClaimsSet, boolean includeKey) {
+        return signClaims(restTemplate, null, issuerId, jwtClaimsSet.toString(), "signClaims", includeKey);
     }
 
     /**
@@ -119,7 +119,7 @@ public class CryptoApiClientImpl implements CryptoApiClient {
      */
     @Override
     public String signClaims(RestTemplate restTemplate, SigningRequest signingRequest, String issuerId, JWTClaimsSet jwtClaimsSet) {
-        return signClaims(restTemplate, signingRequest, issuerId, jwtClaimsSet.toString(), "signClaims");
+        return signClaims(restTemplate, signingRequest, issuerId, jwtClaimsSet.toString(), "signClaims", false);
     }
 
     @Override
@@ -153,11 +153,15 @@ public class CryptoApiClientImpl implements CryptoApiClient {
         return restTemplate.postForObject(jwkmsRoot + "api/crypto/" + path, request, CreateDetachedJwtResponse.class);
     }
 
-    private String signClaims(RestTemplate restTemplate, SigningRequest signingRequest, String issuerId, String payload, String path)  {
+    private String signClaims(RestTemplate restTemplate, SigningRequest signingRequest, String issuerId, String payload, String path, boolean includeKey)  {
         HttpHeaders headers = new HttpHeaders();
         if (issuerId != null) {
             headers.add("issuerId", issuerId);
         }
+        if (includeKey) {
+            headers.add("includeKey", "true");
+        }
+
         if (signingRequest != null) {
             try {
                 headers.add("signingRequest", objectMapper.writeValueAsString(signingRequest));
@@ -165,7 +169,7 @@ public class CryptoApiClientImpl implements CryptoApiClient {
                 LOGGER.error("Can't serialise signing request '{}' into a string", signingRequest, e);
             }
         }
-        HttpEntity<String> request = new HttpEntity<>(payload.toString(), headers);
+        HttpEntity<String> request = new HttpEntity<>(payload, headers);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Sign claims {}", payload);
         }
@@ -298,7 +302,10 @@ public class CryptoApiClientImpl implements CryptoApiClient {
         if (!response.isValid) {
             throw new InvalidTokenException(response.message);
         }
-        return SignedJWT.parse(response.getOriginalJWS());
+        if (response.getOriginalJWS() != null) {
+            return SignedJWT.parse(response.getOriginalJWS());
+        }
+        return null;
     }
 
     /**
@@ -331,7 +338,10 @@ public class CryptoApiClientImpl implements CryptoApiClient {
             if (!response.isValid) {
                 throw new InvalidTokenException(response.message);
             }
-            return SignedJWT.parse(response.getOriginalJWS());
+            if (response.getOriginalJWS() != null) {
+                return SignedJWT.parse(response.getOriginalJWS());
+            }
+            return null;
         } catch (HttpClientErrorException e) {
             LOGGER.debug("Could not validate jws {} because of an http error {}", serializedJws, e.getResponseBodyAsString(), e);
             throw new InvalidTokenException(e.getResponseBodyAsString());
@@ -364,7 +374,10 @@ public class CryptoApiClientImpl implements CryptoApiClient {
             if (!response.isValid) {
                 throw new InvalidTokenException(response.message);
             }
-            return SignedJWT.parse(response.getOriginalJWS());
+            if (response.getOriginalJWS() != null) {
+                return SignedJWT.parse(response.getOriginalJWS());
+            }
+            return null;
         } catch (HttpClientErrorException e) {
             LOGGER.debug("Could not validate jws {} because of an http error {}", serializedJws, e.getResponseBodyAsString(), e);
             throw new InvalidTokenException(e.getResponseBodyAsString());
