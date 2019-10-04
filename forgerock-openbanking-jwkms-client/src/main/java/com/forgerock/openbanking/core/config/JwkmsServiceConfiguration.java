@@ -5,7 +5,7 @@
  * or with one of its affiliates. All use shall be exclusively subject
  * to such license between the licensee and ForgeRock AS.
  */
-package com.forgerock.openbanking.jwkms.service;
+package com.forgerock.openbanking.core.config;
 
 import com.forgerock.openbanking.core.services.ApplicationApiClient;
 import com.forgerock.openbanking.core.services.ApplicationApiClientImpl;
