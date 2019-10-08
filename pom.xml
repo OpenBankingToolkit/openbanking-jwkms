@@ -14,7 +14,7 @@
     <name>ForgeRock OpenBanking Reference Implementation - JWKMS</name>
     <groupId>com.forgerock.openbanking.jwkms</groupId>
     <artifactId>forgerock-openbanking-reference-implementation-jwkms</artifactId>
-    <version>1.1.14-SNAPSHOT</version>
+    <version>1.1.14</version>
     <packaging>pom</packaging>
 
     <parent>
@@ -111,7 +111,7 @@
         <connection>scm:git:https://github.com/ForgeCloud/ob-jwkms.git</connection>
         <developerConnection>scm:git:https://github.com/ForgeCloud/ob-jwkms.git</developerConnection>
         <url>https://github.com/ForgeCloud/ob-jwkms.git</url>
-        <tag>HEAD</tag>
+        <tag>forgerock-openbanking-reference-implementation-jwkms-1.1.14</tag>
     </scm>
 
     <repositories>
