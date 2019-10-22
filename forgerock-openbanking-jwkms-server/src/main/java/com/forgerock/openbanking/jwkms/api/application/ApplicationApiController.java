@@ -13,13 +13,10 @@ import com.forgerock.openbanking.core.model.ForgeRockApplication;
 import com.forgerock.openbanking.jwkms.config.JwkMsConfigurationProperties;
 import com.forgerock.openbanking.jwkms.repository.ApplicationsRepository;
 import com.forgerock.openbanking.jwkms.repository.ForgeRockApplicationsRepository;
-import com.forgerock.openbanking.jwkms.repository.SoftwareStatementRepository;
 import com.forgerock.openbanking.jwkms.service.application.ApplicationService;
 import com.forgerock.openbanking.jwkms.service.crypto.CryptoService;
-import com.forgerock.openbanking.jwkms.service.keystore.JwkKeyStoreService;
 import com.forgerock.openbanking.jwt.services.CryptoApiClient;
 import com.forgerock.openbanking.model.ApplicationIdentity;
-import com.forgerock.openbanking.model.SoftwareStatement;
 import com.forgerock.openbanking.ssl.model.ForgeRockApplicationResponse;
 import com.nimbusds.jose.jwk.JWK;
 import lombok.extern.slf4j.Slf4j;
@@ -54,10 +51,6 @@ public class ApplicationApiController implements ApplicationApi {
     private CryptoService cryptoService;
     @Autowired
     private JwkMsConfigurationProperties jwkMsConfigurationProperties;
-    @Autowired
-    private JwkKeyStoreService jwkKeyStoreService;
-    @Autowired
-    private SoftwareStatementRepository softwareStatementRepository;
     @Autowired
     private CryptoApiClient cryptoApiClient;
 
@@ -271,11 +264,6 @@ public class ApplicationApiController implements ApplicationApi {
             forgeRockApplication.setApplicationId(application.getIssuerId());
             forgeRockApplication.setName(name);
             forgeRockApplicationsRepository.save(forgeRockApplication);
-            SoftwareStatement softwareStatement = new SoftwareStatement();
-            softwareStatement.setName(name);
-            softwareStatement.setApplicationId(application.getIssuerId());
-            softwareStatement.setId(application.getIssuerId());
-            softwareStatementRepository.save(softwareStatement);
         } else {
             application = applicationsRepository.findById(isApp.get().getApplicationId()).get();
         }

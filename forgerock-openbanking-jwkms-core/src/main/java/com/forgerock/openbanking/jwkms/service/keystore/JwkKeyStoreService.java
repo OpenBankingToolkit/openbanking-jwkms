@@ -7,9 +7,9 @@
  */
 package com.forgerock.openbanking.jwkms.service.keystore;
 
+import com.forgerock.openbanking.jwkms.config.JwkMsConfigurationProperties;
 import com.forgerock.openbanking.ssl.services.keystore.KeyStoreFileService;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
@@ -22,25 +22,23 @@ import java.security.KeyStoreException;
  */
 public class JwkKeyStoreService extends KeyStoreFileService {
 
-    JwkKeyStoreService(@Value("${server.ssl.jwk-key-store-password}") String keyStorePassword,
-                       @Value("${server.ssl.jwk-key-store}") Resource keyStoreResource){
-        this.keyStorePassword = keyStorePassword;
-        this.keyStoreResource = keyStoreResource;
+    private JwkMsConfigurationProperties jwkMsConfigurationProperties;
+
+    JwkKeyStoreService(JwkMsConfigurationProperties jwkMsConfigurationProperties){
+        this.jwkMsConfigurationProperties = jwkMsConfigurationProperties;
     }
 
     private static final String JAVA_KEYSTORE = "PKCS12";
 
-    private String keyStorePassword;
-    private Resource keyStoreResource;
 
     @Override
     public Resource getKeyStoreResource() {
-        return keyStoreResource;
+        return jwkMsConfigurationProperties.getJwkKeyStore();
     }
 
     @Override
     public String getKeyStorePassword() {
-        return keyStorePassword;
+        return jwkMsConfigurationProperties.getJwkKeyStorePassword();
     }
 
     @Override

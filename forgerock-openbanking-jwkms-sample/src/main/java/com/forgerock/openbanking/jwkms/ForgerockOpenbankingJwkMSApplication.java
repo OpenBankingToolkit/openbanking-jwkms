@@ -24,6 +24,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -31,6 +33,8 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 import java.util.Optional;
@@ -41,6 +45,7 @@ import java.util.stream.Stream;
 @EnableSwagger2
 @EnableScheduling
 @ComponentScan(basePackages = {"com.forgerock"})
+@EnableMongoRepositories(basePackages = "com.forgerock")
 public class ForgerockOpenbankingJwkMSApplication  {
 
 
@@ -95,6 +100,14 @@ public class ForgerockOpenbankingJwkMSApplication  {
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }
+
+    @Bean
+    public WebClient webClient() throws Exception {
+        HttpClient httpClient = HttpClient.create();
+        ReactorClientHttpConnector connector = new ReactorClientHttpConnector(httpClient);
+        return WebClient.builder().clientConnector(connector).build();
+    }
+
 
     public static class CustomAuthProvider implements AuthenticationProvider {
 

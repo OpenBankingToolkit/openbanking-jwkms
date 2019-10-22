@@ -13,7 +13,7 @@ import com.forgerock.cert.exception.InvalidPsd2EidasCertificate;
 import com.forgerock.cert.utils.CertificateConfiguration;
 import com.forgerock.cert.utils.CertificateUtils;
 import com.forgerock.openbanking.core.model.JwkMsKey;
-import com.forgerock.openbanking.jwkms.config.MATLSConfigurationProperties;
+import com.forgerock.openbanking.jwkms.config.JwkMsConfigurationProperties;
 import com.forgerock.openbanking.jwkms.service.keystore.JwkKeyStoreService;
 import com.forgerock.openbanking.ssl.model.csr.CSRGenerationResponse;
 import com.nimbusds.jose.Algorithm;
@@ -88,20 +88,20 @@ public class JwkStoreServiceImpl implements JwkStoreService {
     private static final Date NOT_AFTER = new Date(System.currentTimeMillis() + 86400000L * 365 * 100);
 
     public JwkStoreServiceImpl(@Autowired JwkKeyStoreService jwkKeyStoreService,
-                               @Autowired MATLSConfigurationProperties matlsConfigurationProperties) {
+                               @Autowired JwkMsConfigurationProperties jwkMsConfigurationProperties) {
         this.jwkKeyStoreService = jwkKeyStoreService;
-        this.matlsConfigurationProperties = matlsConfigurationProperties;
+        this.jwkMsConfigurationProperties = jwkMsConfigurationProperties;
     }
 
     private JwkKeyStoreService jwkKeyStoreService;
-    private MATLSConfigurationProperties matlsConfigurationProperties;
+    private JwkMsConfigurationProperties jwkMsConfigurationProperties;
 
     @Override
     public KeyPair getKey(String alias) {
         LOGGER.debug("Get JwkMsKey from alias {}", alias);
         try {
             KeyStore keyStore = jwkKeyStoreService.getKeyStore();
-            Key key = keyStore.getKey(alias, jwkKeyStoreService.getKeyStorePassword().toCharArray());
+            Key key = keyStore.getKey(alias, jwkMsConfigurationProperties.getJwkKeyStorePassword().toCharArray());
             if (key == null) {
                 LOGGER.debug("We couldn't find the key object behind this alias key {}", alias);
                 return null;
@@ -233,7 +233,7 @@ public class JwkStoreServiceImpl implements JwkStoreService {
             return null;
         }
         KeyStore keyStore = jwkKeyStoreService.getKeyStore();
-        String caAlias = matlsConfigurationProperties.getForgerockExternalCAAlias();
+        String caAlias = jwkMsConfigurationProperties.getCertificateAuthorityAlias();
         Certificate certificateCA;
         try {
             certificateCA = keyStore.getCertificate(caAlias);
@@ -298,7 +298,7 @@ public class JwkStoreServiceImpl implements JwkStoreService {
                                                 String alias, KeyUse use, KeyPair keyPair) {
 
         KeyStore keyStore = jwkKeyStoreService.getKeyStore();
-        String caAlias = matlsConfigurationProperties.getForgerockExternalCAAlias();
+        String caAlias = jwkMsConfigurationProperties.getCertificateAuthorityAlias();
         try {
             // Get the ForgeRock External Certificate Authority certificate. This will be added to the certificate chain
             // for the generated certificate, and also used to sign the certificate.
@@ -311,7 +311,7 @@ public class JwkStoreServiceImpl implements JwkStoreService {
 
             // Store the private key of the certificate we're generating in the keystore, accessible via the alias,
             // which acts as a key for the private key of this cert.
-            keyStore.setKeyEntry(alias, keyPair.getPrivate(), jwkKeyStoreService.getKeyStorePassword().toCharArray(),
+            keyStore.setKeyEntry(alias, keyPair.getPrivate(), jwkMsConfigurationProperties.getJwkKeyStorePassword().toCharArray(),
                     certChain);
             LOGGER.debug("Generate a CSR");
             CSRGenerationResponse csrGenerationResponse = generateCSR(alias, algorithm, certificateSubject, use);
