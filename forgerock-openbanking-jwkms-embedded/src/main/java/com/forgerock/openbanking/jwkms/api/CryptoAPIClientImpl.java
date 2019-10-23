@@ -9,19 +9,13 @@ package com.forgerock.openbanking.jwkms.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.forgerock.openbanking.am.config.AMOpenBankingConfiguration;
 import com.forgerock.openbanking.analytics.model.entries.JwtsGenerationEntry;
 import com.forgerock.openbanking.analytics.services.MetricService;
 import com.forgerock.openbanking.core.model.Application;
 import com.forgerock.openbanking.core.model.JwkMsKey;
 import com.forgerock.openbanking.core.services.CryptoApiClientImpl;
-import com.forgerock.openbanking.jwkms.config.JwkMsConfigurationProperties;
 import com.forgerock.openbanking.jwkms.repository.ApplicationsRepository;
-import com.forgerock.openbanking.jwkms.repository.ForgeRockApplicationsRepository;
-import com.forgerock.openbanking.jwkms.repository.SoftwareStatementRepository;
-import com.forgerock.openbanking.jwkms.service.application.ApplicationService;
 import com.forgerock.openbanking.jwkms.service.crypto.CryptoService;
-import com.forgerock.openbanking.jwkms.service.keystore.JwkKeyStoreService;
 import com.forgerock.openbanking.jwt.exceptions.InvalidTokenException;
 import com.forgerock.openbanking.jwt.model.CreateDetachedJwtResponse;
 import com.forgerock.openbanking.jwt.model.SigningRequest;
@@ -52,7 +46,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
-import java.security.Principal;
 import java.text.ParseException;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -73,23 +66,12 @@ public class CryptoAPIClientImpl implements CryptoApiClient {
     private RestTemplate restTemplate;
 
     @Autowired
-    private AMOpenBankingConfiguration amOpenBankingConfiguration;
-    @Autowired
     private ObjectMapper objectMapper;
     @Autowired
     private ApplicationsRepository applicationsRepository;
     @Autowired
-    private ForgeRockApplicationsRepository forgeRockApplicationsRepository;
-    @Autowired
-    private ApplicationService applicationService;
-    @Autowired
     private CryptoService cryptoService;
-    @Autowired
-    private JwkMsConfigurationProperties jwkMsConfigurationProperties;
-    @Autowired
-    private JwkKeyStoreService jwkKeyStoreService;
-    @Autowired
-    private SoftwareStatementRepository softwareStatementRepository;
+
     @Autowired
     private MetricService metricService;
 
@@ -458,27 +440,6 @@ public class CryptoAPIClientImpl implements CryptoApiClient {
 
         SignedJWT jws = (SignedJWT) JWTParser.parse(jwsSerialized);
         return cryptoService.validateDetachedJwSWithJWK(jws, expectedIssuerId, jwk.toJSONString());
-    }
-
-    /**
-     * Verify a stateless access token
-     * @param accessTokenBearer an access token bearer or the JWT directly
-     * @return the JWS
-     * @throws ParseException can't parse the access token JWT, must not be a stateless JWT
-     * @throws InvalidTokenException the access token is invalid
-     */
-    @Override
-    public SignedJWT verifyAccessToken(String accessTokenBearer)
-            throws ParseException, InvalidTokenException, IOException {
-        accessTokenBearer = accessTokenBearer.replaceFirst("^Bearer ", "");
-        SignedJWT signedAccessToken = (SignedJWT) JWTParser.parse(accessTokenBearer);
-        validateJws(accessTokenBearer,null, amOpenBankingConfiguration.jwksUri);
-        if (!amOpenBankingConfiguration.audiences.contains(signedAccessToken.getJWTClaimsSet().getIssuer())) {
-            LOGGER.debug("Invalid audience {}, expecting {}", signedAccessToken.getJWTClaimsSet().getIssuer(), amOpenBankingConfiguration.audiences);
-            throw new InvalidTokenException("Invalid audience '" + signedAccessToken.getJWTClaimsSet().getIssuer() + "', expecting '" +
-                    amOpenBankingConfiguration.audiences + "'");
-        }
-        return signedAccessToken;
     }
 
     private RSAKey getJwkForEncryption(String jwkUri) {

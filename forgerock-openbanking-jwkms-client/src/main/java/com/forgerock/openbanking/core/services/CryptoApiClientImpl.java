@@ -9,7 +9,6 @@ package com.forgerock.openbanking.core.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.forgerock.openbanking.am.config.AMOpenBankingConfiguration;
 import com.forgerock.openbanking.core.model.ValidJwtResponse;
 import com.forgerock.openbanking.jwt.exceptions.InvalidTokenException;
 import com.forgerock.openbanking.jwt.model.CreateDetachedJwtResponse;
@@ -18,7 +17,6 @@ import com.forgerock.openbanking.jwt.model.ValidDetachedJwtResponse;
 import com.forgerock.openbanking.jwt.services.CryptoApiClient;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,8 +46,6 @@ public class CryptoApiClientImpl implements CryptoApiClient {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Autowired
-    private AMOpenBankingConfiguration amOpenBankingConfiguration;
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -436,26 +432,5 @@ public class CryptoApiClientImpl implements CryptoApiClient {
             LOGGER.debug("Could not validate jws {} because of an http error {}", body, e.getResponseBodyAsString(), e);
             throw new InvalidTokenException(e.getResponseBodyAsString());
         }
-    }
-
-    /**
-     * Verify a stateless access token
-     * @param accessTokenBearer an access token bearer or the JWT directly
-     * @return the JWS
-     * @throws ParseException can't parse the access token JWT, must not be a stateless JWT
-     * @throws InvalidTokenException the access token is invalid
-     */
-    @Override
-    public SignedJWT verifyAccessToken(String accessTokenBearer)
-            throws ParseException, InvalidTokenException {
-        accessTokenBearer = accessTokenBearer.replaceFirst("^Bearer ", "");
-        SignedJWT signedAccessToken = (SignedJWT) JWTParser.parse(accessTokenBearer);
-        validateJws(accessTokenBearer,null, amOpenBankingConfiguration.jwksUri);
-        if (!amOpenBankingConfiguration.audiences.contains(signedAccessToken.getJWTClaimsSet().getIssuer())) {
-            LOGGER.debug("Invalid audience {}, expecting {}", signedAccessToken.getJWTClaimsSet().getIssuer(), amOpenBankingConfiguration.audiences);
-            throw new InvalidTokenException("Invalid audience '" + signedAccessToken.getJWTClaimsSet().getIssuer() + "', expecting '" +
-                    amOpenBankingConfiguration.audiences + "'");
-        }
-        return signedAccessToken;
     }
 }

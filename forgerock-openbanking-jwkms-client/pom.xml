@@ -31,10 +31,6 @@
         </dependency>
         <dependency>
             <groupId>com.forgerock.openbanking</groupId>
-            <artifactId>forgerock-openbanking-am</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.forgerock.openbanking</groupId>
             <artifactId>forgerock-openbanking-jwt</artifactId>
         </dependency>
         <dependency>

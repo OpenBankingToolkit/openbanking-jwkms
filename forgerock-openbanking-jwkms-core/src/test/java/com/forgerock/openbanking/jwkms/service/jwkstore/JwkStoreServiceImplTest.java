@@ -9,7 +9,7 @@ package com.forgerock.openbanking.jwkms.service.jwkstore;
 
 import com.forgerock.cert.utils.CertificateConfiguration;
 import com.forgerock.openbanking.core.model.JwkMsKey;
-import com.forgerock.openbanking.jwkms.config.MATLSConfigurationProperties;
+import com.forgerock.openbanking.jwkms.config.JwkMsConfigurationProperties;
 import com.forgerock.openbanking.jwkms.service.keystore.JwkKeyStoreService;
 import com.forgerock.openbanking.ssl.model.csr.CSRGenerationResponse;
 import com.nimbusds.jose.Algorithm;
@@ -51,7 +51,7 @@ public class JwkStoreServiceImplTest {
     private JwkKeyStoreService mockKeyStoreService;
 
     @Mock
-    private MATLSConfigurationProperties matlsConfigurationProperties;
+    private JwkMsConfigurationProperties jwkMsConfigurationProperties;
 
     // Class under test
     private JwkStoreServiceImpl jwkStoreServiceImpl;
@@ -66,13 +66,13 @@ public class JwkStoreServiceImplTest {
 
     @Before
     public void setUp() throws Exception {
-        jwkStoreServiceImpl = new JwkStoreServiceImpl(mockKeyStoreService, matlsConfigurationProperties);
+        jwkStoreServiceImpl = new JwkStoreServiceImpl(mockKeyStoreService, jwkMsConfigurationProperties);
 
         // This unusual way of mocking is required to mock java system Key Store
         keyStoreMock = new KeyStore(keyStoreSpiMock, null, "test"){ };
         keyStoreMock.load(null);
         when(mockKeyStoreService.getKeyStore()).thenReturn(keyStoreMock);
-        when(mockKeyStoreService.getKeyStorePassword()).thenReturn(KEYSTORE_PASSWORD);
+        when(jwkMsConfigurationProperties.getJwkKeyStorePassword()).thenReturn(KEYSTORE_PASSWORD);
     }
 
     @Test
@@ -107,7 +107,7 @@ public class JwkStoreServiceImplTest {
         when(keyStoreSpiMock.engineGetKey(any(), any())).thenReturn(null);
 
         when(mockKeyStoreService.getKeyStore()).thenReturn(keyStoreMock);
-        when(mockKeyStoreService.getKeyStorePassword()).thenReturn("pass");
+        when(jwkMsConfigurationProperties.getJwkKeyStorePassword()).thenReturn("pass");
 
         // When
         KeyPair keyPair = jwkStoreServiceImpl.getKey("notSuch");
@@ -156,7 +156,7 @@ public class JwkStoreServiceImplTest {
         RSAPrivateKey privateKey = mock(RSAPrivateKey.class);
         when(privateKey.getPrivateExponent()).thenReturn(new BigInteger("34832987"));
 
-        when(matlsConfigurationProperties.getForgerockExternalCAAlias()).thenReturn("caAlias");
+        when(jwkMsConfigurationProperties.getCertificateAuthorityAlias()).thenReturn("caAlias");
         when(keyStoreSpiMock.engineGetCertificate("caAlias")).thenReturn(getTestCertificate());
 
         when(mockJwkMsKey.getKeystoreAlias()).thenReturn("myAlias");
@@ -201,9 +201,9 @@ public class JwkStoreServiceImplTest {
         KeyStore ks = getKeyStore(KEYSTORE_TYPE);
         // Add the OBRI_EXTERNAL_CA certificate to the keystore
         ks.setCertificateEntry(OBRI_EXTERNAL_CA_ALIAS, getTestCACertificate());
-        when(matlsConfigurationProperties.getForgerockExternalCAAlias()).thenReturn(OBRI_EXTERNAL_CA_ALIAS);
+        when(jwkMsConfigurationProperties.getCertificateAuthorityAlias()).thenReturn(OBRI_EXTERNAL_CA_ALIAS);
         when(mockKeyStoreService.getKeyStore()).thenReturn(ks);
-        when(mockKeyStoreService.getKeyStorePassword()).thenReturn(KEYSTORE_PASSWORD);
+        when(jwkMsConfigurationProperties.getJwkKeyStorePassword()).thenReturn(KEYSTORE_PASSWORD);
 
         String NEW_CERT_ALIAS = "TestCert";
         JWSAlgorithm algorithm = JWSAlgorithm.RS256;

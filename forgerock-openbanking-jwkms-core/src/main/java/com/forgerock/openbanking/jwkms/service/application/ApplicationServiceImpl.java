@@ -14,11 +14,9 @@ import com.forgerock.openbanking.core.model.JwkMsKey;
 import com.forgerock.openbanking.jwkms.config.JwkMsConfigurationProperties;
 import com.forgerock.openbanking.jwkms.repository.ApplicationsRepository;
 import com.forgerock.openbanking.jwkms.repository.ForgeRockApplicationsRepository;
-import com.forgerock.openbanking.jwkms.repository.SoftwareStatementRepository;
 import com.forgerock.openbanking.jwkms.service.jwkstore.JwkStoreService;
 import com.forgerock.openbanking.model.ApplicationIdentity;
 import com.forgerock.openbanking.model.OBRIRole;
-import com.forgerock.openbanking.model.SoftwareStatement;
 import com.forgerock.openbanking.ssl.model.csr.CSRGenerationResponse;
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.JWEAlgorithm;
@@ -66,8 +64,6 @@ public class ApplicationServiceImpl implements ApplicationService {
     private JwkMsConfigurationProperties jwkMsConfigurationProperties;
     @Autowired
     private ForgeRockApplicationsRepository forgeRockApplicationsRepository;
-    @Autowired
-    private SoftwareStatementRepository softwareStatementRepository;
     @Autowired
     private ApplicationService applicationService;
 
@@ -347,11 +343,7 @@ public class ApplicationServiceImpl implements ApplicationService {
             forgeRockApplication.setApplicationId(application.getIssuerId());
             forgeRockApplication.setName(name);
             forgeRockApplicationsRepository.save(forgeRockApplication);
-            SoftwareStatement softwareStatement = new SoftwareStatement();
-            softwareStatement.setName(name);
-            softwareStatement.setApplicationId(application.getIssuerId());
-            softwareStatement.setId(application.getIssuerId());
-            softwareStatementRepository.save(softwareStatement);
+
         } else {
             application = applicationsRepository.findById(isApp.get().getApplicationId()).get();
         }
