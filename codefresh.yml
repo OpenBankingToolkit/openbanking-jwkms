@@ -61,8 +61,11 @@ steps:
       - ACCESS_TOKEN=${{GITHUB_ACCESS_TOKEN}}
       - OWNER=${{CF_REPO_OWNER}}
       - REPO=${{CF_REPO_NAME}}
-    commands:
-      - python /run.py
+    when:
+      condition:
+        all:
+          noSkipCiInCommitMessage: 'includes(lower("${{CF_COMMIT_MESSAGE}}"), "[maven-release-plugin]") == false'
+          masterBranch: '"${{CF_BRANCH}}" == "master"'
 
   # deploy jar stage
   deploy-master:
@@ -89,5 +92,8 @@ steps:
       - ACCESS_TOKEN=${{GITHUB_ACCESS_TOKEN}}
       - OWNER=${{CF_REPO_OWNER}}
       - REPO=${{CF_REPO_NAME}}
-    commands:
-      - python /run.py
+    when:
+      condition:
+        all:
+          noSkipCiInCommitMessage: 'includes(lower("${{CF_COMMIT_MESSAGE}}"), "[maven-release-plugin]") == false'
+          masterBranch: '"${{CF_BRANCH}}" == "master"'
