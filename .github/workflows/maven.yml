@@ -1,10 +1,6 @@
 name: Deploy
 
-on:
-  push:
-    branches:
-    - master
-    - github-actions
+on: [push]
 
 jobs:
   build:
@@ -45,7 +41,7 @@ jobs:
         readonly local last_release_commit_hash=$(git log --author="openbankbot" --pretty=format:"%H" -1)
         echo "Last openbankbot commit: ${last_release_commit_hash}"
         echo "Current commit: ${GITHUB_SHA}"
-        if [[ "${last_release_commit_hash}" -eq ${GITHUB_SHA} ]]; then
+        if [[ "${last_release_commit_hash}" = "${GITHUB_SHA}" ]]; then
           echo "Skipping for openbankbot commit"
           exit 0
         fi
