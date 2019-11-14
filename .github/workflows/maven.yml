@@ -45,6 +45,12 @@ jobs:
           echo "Skipping for openbankbot commit"
           exit 0
         fi
+        readonly local branch=${GITHUB_REF##*/}
+        echo "Current branch: ${branch}"
+        if [[ ! "${branch}" = "master" ]]; then
+          echo "Skipping for ${branch} branch"
+          exit 0
+        fi
         git checkout ${GITHUB_REF##*/}
         git reset --hard ${GITHUB_SHA}
         curl https://raw.githubusercontent.com/ForgeCloud/ob-release/master/src/release.sh > $HOME/release.sh
