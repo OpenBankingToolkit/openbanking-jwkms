@@ -18,14 +18,9 @@ jobs:
       run: mvn -ntp license:check	
       env:	
         FR_PRIVATE_REPO_USER: ${{ secrets.FR_PRIVATE_REPO_USER }}	
-        FR_PRIVATE_REPO_PASSWORD: ${{ secrets.FR_PRIVATE_REPO_PASSWORD }}	
-    - name: Build	
-      run: mvn -ntp -Ddockerfile.skip -DdockerCompose.skip -DskipTests -DskipITs clean install	
-      env:	
-        FR_PRIVATE_REPO_USER: ${{ secrets.FR_PRIVATE_REPO_USER }}	
-        FR_PRIVATE_REPO_PASSWORD: ${{ secrets.FR_PRIVATE_REPO_PASSWORD }}	
-    - name: Test	
-      run: mvn -ntp -DdockerCompose.skip -Ddockerfile.skip -DskipITs verify	
+        FR_PRIVATE_REPO_PASSWORD: ${{ secrets.FR_PRIVATE_REPO_PASSWORD }}
+    - name: Build and Test	
+      run: mvn -ntp verify	
       env:	
         FR_PRIVATE_REPO_USER: ${{ secrets.FR_PRIVATE_REPO_USER }}	
         FR_PRIVATE_REPO_PASSWORD: ${{ secrets.FR_PRIVATE_REPO_PASSWORD }}
