@@ -114,9 +114,9 @@
     </dependencyManagement>
 
     <scm>
-        <connection>scm:git:https://github.com/ForgeRock/jwkms.git</connection>
-        <developerConnection>scm:git:https://github.com/ForgeRock/jwkms.git</developerConnection>
-        <url>https://github.com/ForgeRock/jwkms.git</url>
+        <connection>scm:git:https://github.com/ForgeCloud/ob-jwkms.git</connection>
+        <developerConnection>scm:git:https://github.com/ForgeCloud/ob-jwkms.git</developerConnection>
+        <url>https://github.com/ForgeCloud/ob-jwkms.git</url>
         <tag>HEAD</tag>
     </scm>
 
