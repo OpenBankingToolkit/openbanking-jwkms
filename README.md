@@ -128,3 +128,61 @@ external parties, you would need to define the interface `JwkStoreService` and d
 This will delegate the key creation to your service and you will be able to customise the key creation,
 by calling your CA dedicated API for example.
 
+# Building
+To build the source locally you'll need the following tools installed:
+- Docker
+- Maven
+- Java 11
+
+```
+mvn install
+```
+
+# Testing
+Given you have the tools to build the source the same toolset is required for testing.
+```
+mvn verify
+```
+
+We've got CI set up so we'll automatically run the tests to make sure nothing's broken.
+
+# Contributing
+We love open source contribution so feel free to get involved. Ways you can contribute:
+- Reporting a bug
+- Discussing the current state of the code
+- Proposing new features
+- Submitting a fix
+- Becoming a maintainer
+
+## Reporting a bug
+We use GitHub issues to track bugs. Report a bug by opening a [new bug](https://github.com/ForgeRock/jwkms/issues/new?assignees=&labels=&template=bug_report.md&title=)
+
+## Proposing new features
+We use GitHub issues to track new features. Request a new feature by opening a [new feature](https://github.com/ForgeRock/jwkms/issues/new?assignees=&labels=&template=feature.md&title=)
+
+## Submitting a fix
+Think you can fix and issue or implement a new feature? Great! 
+1. Start by creating a new branch `git checkout -b fix-that-issue`
+1. Make your changes
+1. Add some tests
+1. Raise a PR
+1. Check the build passes
+
+## Extending
+We've designed the service to be extensible, this means you can take what exists today and add to it yourself. Given you've added the dependency go ahead and create your main class.
+
+```
+@SpringBootApplication
+@EnableSwagger2
+@EnableScheduling
+@ComponentScan(basePackages = {"com.forgerock"})
+@EnableMongoRepositories(basePackages = "com.forgerock")
+public class Application  {
+
+    public static void main(String[] args) throws Exception {
+        new SpringApplication(ForgerockOpenbankingJwkMSApplication.class).run(args);
+    }
+}
+```
+
+Now you can add your own REST APIs with the `@RequestMapping` spring MVC annotations or customise behaviour such as authentication. We suggest you checkout the [sample app](https://github.com/ForgeRock/jwkms/blob/master/forgerock-openbanking-jwkms-sample/src/main/java/com/forgerock/openbanking/jwkms/ForgerockOpenbankingJwkMSApplication.java)
