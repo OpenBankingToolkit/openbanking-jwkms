@@ -33,7 +33,7 @@
     <parent>
         <groupId>com.forgerock.openbanking</groupId>
         <artifactId>forgerock-openbanking-starter-parent</artifactId>
-        <version>1.0.32</version>
+        <version>1.0.52</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
 
@@ -122,17 +122,19 @@
         <tag>HEAD</tag>
     </scm>
 
+    <distributionManagement>
+        <repository>
+            <id>bintray-openbankingtoolkit-OpenBankingToolkit</id>
+            <name>OpenBankingToolkit JWKMS</name>
+            <url>https://api.bintray.com/maven/openbanking-toolkit/OpenBankingToolKit/openbanking-jwkms/;publish=1</url>
+        </repository>
+    </distributionManagement>
+
+
     <repositories>
         <repository>
-            <id>forgerock-private-releases</id>
-            <name>ForgeRock Private Releases Repository</name>
-            <url>http://maven.forgerock.org/repo/private-releases</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
+            <id>jcenter</id>
+            <url>https://jcenter.bintray.com/</url>
         </repository>
     </repositories>
 
