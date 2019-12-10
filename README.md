@@ -97,7 +97,7 @@ For Apache Maven:
 
 ```
 <dependency>
-    <groupId>com.forgerock.openbanking.jwkms</groupId>
+    <groupId>com.forgerock.openbanking.clients</groupId>
     <artifactId>forgerock-openbanking-jwkms-client</artifactId>
 </dependency>
 ```
@@ -105,7 +105,7 @@ For Apache Maven:
 For Gradle:
 
 ```
-compile 'com.forgerock.openbanking.jwkms:forgerock-openbanking-jwkms-client'
+compile 'com.forgerock.openbanking.clients:forgerock-openbanking-jwkms-client'
 ```
 
 
