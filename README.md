@@ -1,4 +1,14 @@
-[<img src="https://raw.githubusercontent.com/ForgeRock/forgerock-logo-dev/master/forgerock-logo-dev.png" align="right" width="220px"/>](https://developer.forgerock.com/)
+[<img src="https://raw.githubusercontent.com/ForgeRock/forgerock-logo-dev/master/Logo-fr-dev.png" align="right" width="220px"/>](https://developer.forgerock.com/)
+
+| |Current Status|
+|---|---|
+|Build|[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2FOpenBankingToolkit%2Fopenbanking-jwkms%2Fbadge%3Fref%3Dmaster&style=flat)](https://actions-badge.atrox.dev/OpenBankingToolkit/openbanking-jwkms/goto?ref=master)|
+|Code coverage|[![codecov](https://codecov.io/gh/OpenBankingToolkit/openbanking-jwkms/branch/master/graph/badge.svg)](https://codecov.io/gh/OpenBankingToolkit/openbanking-jwkms)
+|Bintray|[![Bintray](https://img.shields.io/bintray/v/openbanking-toolkit/OpenBankingToolkit/openbanking-jwkms.svg?maxAge=2592000)](https://bintray.com/openbanking-toolkit/OpenBankingToolkit/openbanking-jwkms)|
+|License|![license](https://img.shields.io/github/license/ACRA/acra.svg)|
+
+**_This repository is part of the Open Banking Tool kit. If you just landed to that repository looking for our tool kit,_
+_we recommend having a first read to_ https://github.com/OpenBankingToolkit/openbanking-toolkit**
 
 ForgeRock OpenBanking JWKMS
 ========================
@@ -155,10 +165,10 @@ We love open source contribution so feel free to get involved. Ways you can cont
 - Becoming a maintainer
 
 ## Reporting a bug
-We use GitHub issues to track bugs. Report a bug by opening a [new bug](https://github.com/ForgeRock/jwkms/issues/new?assignees=&labels=&template=bug_report.md&title=)
+We use GitHub issues to track bugs. Report a bug by opening a [new bug](https://github.com/OpenBankingToolkit/jwkms/issues/new?assignees=&labels=&template=bug_report.md&title=)
 
 ## Proposing new features
-We use GitHub issues to track new features. Request a new feature by opening a [new feature](https://github.com/ForgeRock/jwkms/issues/new?assignees=&labels=&template=feature.md&title=)
+We use GitHub issues to track new features. Request a new feature by opening a [new feature](https://github.com/OpenBankingToolkit/jwkms/issues/new?assignees=&labels=&template=feature.md&title=)
 
 ## Submitting a fix
 Think you can fix and issue or implement a new feature? Great! 
@@ -185,4 +195,4 @@ public class Application  {
 }
 ```
 
-Now you can add your own REST APIs with the `@RequestMapping` spring MVC annotations or customise behaviour such as authentication. We suggest you checkout the [sample app](https://github.com/ForgeRock/jwkms/blob/master/forgerock-openbanking-jwkms-sample/src/main/java/com/forgerock/openbanking/jwkms/ForgerockOpenbankingJwkMSApplication.java)
+Now you can add your own REST APIs with the `@RequestMapping` spring MVC annotations or customise behaviour such as authentication. We suggest you checkout the [sample app](https://github.com/OpenBankingToolkit/openbanking-jwkms/blob/master/forgerock-openbanking-jwkms-sample/src/main/java/com/forgerock/openbanking/jwkms/ForgerockOpenbankingJwkMSApplication.java)

@@ -21,14 +21,14 @@
 package com.forgerock.openbanking.jwkms;
 
 import com.forgerock.cert.utils.CertificateConfiguration;
-import com.forgerock.openbanking.authentication.configurers.MultiAuthenticationCollectorConfigurer;
-import com.forgerock.openbanking.authentication.configurers.collectors.StaticUserCollector;
 import com.forgerock.openbanking.core.model.Application;
 import com.forgerock.openbanking.jwkms.repository.ApplicationsRepository;
 import com.forgerock.openbanking.jwkms.repository.ForgeRockApplicationsRepository;
 import com.forgerock.openbanking.jwkms.service.application.ApplicationService;
 import com.forgerock.openbanking.model.OBRIRole;
 import com.mongodb.MongoClient;
+import dev.openbanking4.spring.security.multiauth.configurers.MultiAuthenticationCollectorConfigurer;
+import dev.openbanking4.spring.security.multiauth.configurers.collectors.StaticUserCollector;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.provider.mongo.MongoLockProvider;
 import org.springframework.beans.factory.annotation.Autowired;
