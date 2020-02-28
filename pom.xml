@@ -46,7 +46,7 @@
     <properties>
         <ob-common.version>1.0.64</ob-common.version>
         <ob-analytics.version>1.1.8</ob-analytics.version>
-        <ob-clients.version>1.0.25</ob-clients.version>
+        <ob-clients.version>1.0.26</ob-clients.version>
     </properties>
 
     <modules>
