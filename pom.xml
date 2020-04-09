@@ -115,8 +115,8 @@
     </dependencyManagement>
 
     <scm>
-        <connection>scm:git:https://github.com/OpenBankingToolkit/openbanking-jwkms.git</connection>
-        <developerConnection>scm:git:https://github.com/OpenBankingToolkit/openbanking-jwkms.git</developerConnection>
+        <connection>scm:git:git@github.com:OpenBankingToolkit/openbanking-jwkms.git</connection>
+        <developerConnection>scm:git:git@github.com:OpenBankingToolkit/openbanking-jwkms.git</developerConnection>
         <url>https://github.com/OpenBankingToolkit/openbanking-jwkms.git</url>
       <tag>HEAD</tag>
   </scm>
