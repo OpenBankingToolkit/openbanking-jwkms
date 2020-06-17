@@ -51,7 +51,9 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import java.security.Security;
 import java.text.ParseException;
 import java.util.Base64;
@@ -60,7 +62,9 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.forgerock.openbanking.jwkms.JwkTestHelper.*;
+import static com.forgerock.openbanking.jwkms.JwkTestHelper.jwkToJwkMsKey;
+import static com.forgerock.openbanking.jwkms.JwkTestHelper.stringToJWK;
+import static com.forgerock.openbanking.jwkms.JwkTestHelper.utf8FileToString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -163,12 +167,12 @@ public class CryptoServiceImplTest {
         // Given
         String issuerId = "5a6ca3f9-b42d-4aed-bd6b-c426e8ecaef4"; // Matches to one in encoded JWT
         String audienceId = "aud1";
-        JwkMsKey encKey =  utf8FileToString
+        JwkMsKey encKey = utf8FileToString
                 .andThen(stringToJWK)
                 .andThen(jwkToJwkMsKey)
                 .apply("jwk/psEncryptionJwk.json");
         encKey.setValidityWindowStart(DateTime.now());
-        JwkMsKey sigKey =  utf8FileToString
+        JwkMsKey sigKey = utf8FileToString
                 .andThen(stringToJWK)
                 .andThen(jwkToJwkMsKey)
                 .apply("jwk/psSignatureJwk.json");
@@ -203,12 +207,12 @@ public class CryptoServiceImplTest {
         Application applicationTo = new Application();
         applicationTo.setIssuerId("differentAppIssuerId");
 
-        JwkMsKey encKey =  utf8FileToString
+        JwkMsKey encKey = utf8FileToString
                 .andThen(stringToJWK)
                 .andThen(jwkToJwkMsKey)
                 .apply("jwk/psEncryptionJwk.json");
         encKey.setValidityWindowStart(DateTime.now());
-        JwkMsKey sigKey =  utf8FileToString
+        JwkMsKey sigKey = utf8FileToString
                 .andThen(stringToJWK)
                 .andThen(jwkToJwkMsKey)
                 .apply("jwk/psSignatureJwk.json");
@@ -240,7 +244,7 @@ public class CryptoServiceImplTest {
     @Test
     public void sign_getRSASignedJwt() {
         // Given
-        JwkMsKey sigKey =  utf8FileToString
+        JwkMsKey sigKey = utf8FileToString
                 .andThen(stringToJWK)
                 .andThen(jwkToJwkMsKey)
                 .apply("jwk/psSignatureJwk.json");
@@ -296,7 +300,7 @@ public class CryptoServiceImplTest {
     @Test
     public void signDetachedJwt() throws JOSEException, ParseException, UnsupportedEncodingException {
         // Given
-        JwkMsKey sigKey =  utf8FileToString
+        JwkMsKey sigKey = utf8FileToString
                 .andThen(stringToJWK)
                 .andThen(jwkToJwkMsKey)
                 .apply("jwk/psSignatureJwk.json");
@@ -317,7 +321,7 @@ public class CryptoServiceImplTest {
 
         // Then
         assertThat(detachedJwt).isNotNull();
-        JWSVerifier verifier = new RSASSAVerifier(((RSAKey)sigKey.getJwk()).toRSAPublicKey(), new HashSet<>(
+        JWSVerifier verifier = new RSASSAVerifier(((RSAKey) sigKey.getJwk()).toRSAPublicKey(), new HashSet<>(
                 ImmutableList.of("b64", "http://openbanking.org.uk/iss", "http://openbanking.org.uk/iat")));
 
         byte[] payloadBytes = claims.toString().getBytes("UTF-8");
@@ -332,7 +336,7 @@ public class CryptoServiceImplTest {
     @Test
     public void verifyDetachedJwt() throws ParseException {
         // Given
-        JwkMsKey sigKey =  utf8FileToString
+        JwkMsKey sigKey = utf8FileToString
                 .andThen(stringToJWK)
                 .andThen(jwkToJwkMsKey)
                 .apply("jwk/psSignatureJwk.json");
@@ -352,6 +356,48 @@ public class CryptoServiceImplTest {
         // When
         ValidDetachedJwtResponse validDetachedJwtResponse = cryptoService.validateDetachedJwSWithJWK(
                 detachedJwt, null, sigKey.getJwkSerialized());
+
+        // Then
+        assertThat(validDetachedJwtResponse).isNotNull();
+        assertThat(validDetachedJwtResponse.isValid).isTrue();
+    }
+
+    @Test
+    public void verifyLbgDetachedJwt() throws ParseException, IOException {
+        // Given
+        JWKSet jwkSet = JWKSet.load(new URL("http://keystore.openbankingtest.org.uk/0015800000jf9GgAAI/teOqgJ7VrRBtiNus2h0OPL.jwks"));
+        JWK jwk = jwkSet.getKeyByKeyId("SwdHaO8lYHIsFluN3md06YI5oYc");
+
+        String payload = "{\"Data\":{\"Initiation\":{\"InstructionIdentification\":\"ACME412\",\"EndToEndIdentification\":\"FRESCO.21302.GFX.30\",\"InstructedAmount\":{\"Amount\":\"165.88\",\"Currency\":\"GBP\"},\"CreditorAccount\":{\"SchemeName\":\"UK.OBIE.SortCodeAccountNumber\",\"Identification\":\"08080021325698\",\"Name\":\"ACME Inc\",\"SecondaryIdentification\":\"0002\"},\"RemittanceInformation\":{\"Reference\":\"FRESCO-101\",\"Unstructured\":\"Internal ops code 5120101\"}}},\"Risk\":{\"PaymentContextCode\":\"EcommerceGoods\",\"MerchantCategoryCode\":\"5967\",\"MerchantCustomerIdentification\":\"053598653254\",\"DeliveryAddress\":{\"AddressLine\":[\"Flat 7\",\"Acacia Lodge\"],\"StreetName\":\"Acacia Avenue\",\"BuildingNumber\":\"27\",\"PostCode\":\"GU31 2ZZ\",\"TownName\":\"Sparsholt\",\"CountySubDivision\":[\"Wessex\"],\"Country\":\"UK\"}}}";
+        String jwsDetached = "eyJiNjQiOmZhbHNlLCJodHRwOi8vb3BlbmJhbmtpbmcub3JnLnVrL2lhdCI6MTU5MjE2NDIzMSwiaHR0cDovL29wZW5iYW5raW5nLm9yZy51ay90YW4iOiJvcGVuYmFua2luZy5vcmcudWsiLCJodHRwOi8vb3BlbmJhbmtpbmcub3JnLnVrL2lzcyI6IjViMWQ5NzFmLTJmYWEtNDk3ZC1hZDFjLTg3ZjIyY2E4ZjA5MyIsImFsZyI6IlBTMjU2Iiwia2lkIjoiU3dkSGFPOGxZSElzRmx1TjNtZDA2WUk1b1ljIiwiY3JpdCI6WyJiNjQiLCJodHRwOi8vb3BlbmJhbmtpbmcub3JnLnVrL2lhdCIsImh0dHA6Ly9vcGVuYmFua2luZy5vcmcudWsvdGFuIiwiaHR0cDovL29wZW5iYW5raW5nLm9yZy51ay9pc3MiXX0..DQY57jqzjckHtOhw7r2qJI3V_gB4B7g53iUxz_TFnA8LE-jJf3ABe97Tx8aeJZt2hs3N3x5JYL2Dja_WghbV4vGVyxQzNcmIq9WcAdYHRbFZko_9yFYbiJ3MopB9mKtKeZ1cXMVwfH8MhVlb23IhL0e0UStXjmi54aTziFxvEutBcmxaU8K7cIR8AB4RK5q4eqXpvFmftoKtqr_naNPTLgtaq9LwUd8-ptvdm3rfls58JODaruuKUxFk1YX5tdjtCpMaDwt1VYIjVZvlS7IqVa2jGm-0REvDZK1z0HzyrUxdP2FUQldCPRP3wohOZ7ZyW7Dj3yxoo5ijJPIqx3yNRw";
+        SignedJWT detachedJwt = SignedJWT.parse(rebuildJWS(jwsDetached, payload));
+
+        // When
+        ValidDetachedJwtResponse validDetachedJwtResponse = cryptoService.validateDetachedJwSWithJWK(detachedJwt, null, jwk.toJSONString());
+
+        // Then
+        assertThat(validDetachedJwtResponse).isNotNull();
+        assertThat(validDetachedJwtResponse.isValid).isTrue();
+    }
+
+    // TODO = this requires the JWK used by Lloyds to create the detached JWS
+    //@Test
+    public void verifyLbgGeneratedDetachedJwt() throws ParseException {
+        // Given
+        JwkMsKey sigKey = utf8FileToString
+                .andThen(stringToJWK)
+                .andThen(jwkToJwkMsKey)
+                .apply("jwk/lbgSignatureJwk.json");
+        Application application = new Application();
+        application.setCurrentSignKid(sigKey.getKid());
+        application.setKeys(ImmutableMap.of(sigKey.getKid(), sigKey));
+        String payload = "{\"Data\":{\"Initiation\":{\"InstructionIdentification\":\"ACME412\",\"EndToEndIdentification\":\"FRESCO.21302.GFX.30\",\"InstructedAmount\":{\"Amount\":\"165.88\",\"Currency\":\"GBP\"},\"CreditorAccount\":{\"SchemeName\":\"UK.OBIE.SortCodeAccountNumber\",\"Identification\":\"08080021325698\",\"Name\":\"ACME Inc\",\"SecondaryIdentification\":\"0002\"},\"RemittanceInformation\":{\"Reference\":\"FRESCO-101\",\"Unstructured\":\"Internal ops code 5120101\"}}},\"Risk\":{\"PaymentContextCode\":\"EcommerceGoods\",\"MerchantCategoryCode\":\"5967\",\"MerchantCustomerIdentification\":\"053598653254\",\"DeliveryAddress\":{\"AddressLine\":[\"Flat 7\",\"Acacia Lodge\"],\"StreetName\":\"Acacia Avenue\",\"BuildingNumber\":\"27\",\"PostCode\":\"GU31 2ZZ\",\"TownName\":\"Sparsholt\",\"CountySubDivision\":[\"Wessex\"],\"Country\":\"UK\"}}}";
+
+        CreateDetachedJwtResponse detachedJwtResponse = cryptoService.signPayloadToDetachedJwt(null, null, payload, application);
+        SignedJWT detachedJwt = SignedJWT.parse(rebuildJWS(detachedJwtResponse.detachedSignature, payload));
+
+        // When
+        ValidDetachedJwtResponse validDetachedJwtResponse = cryptoService.validateDetachedJwSWithJWK(detachedJwt, null, sigKey.getJwkSerialized());
 
         // Then
         assertThat(validDetachedJwtResponse).isNotNull();
