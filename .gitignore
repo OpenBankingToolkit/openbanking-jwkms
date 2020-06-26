@@ -27,3 +27,6 @@ hs_err_pid*
 .idea/
 
 target/
+pom.xml.versionsBackup
+release.properties
+*.releaseBackup
