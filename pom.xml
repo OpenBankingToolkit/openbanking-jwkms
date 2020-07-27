@@ -27,7 +27,7 @@
     <name>ForgeRock OpenBanking Reference Implementation - JWKMS</name>
     <groupId>com.forgerock.openbanking.jwkms</groupId>
     <artifactId>forgerock-openbanking-reference-implementation-jwkms</artifactId>
-    <version>1.1.71-SNAPSHOT</version>
+    <version>1.1.72-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <parent>
@@ -45,7 +45,7 @@
 
     <properties>
         <ob-common.version>1.0.77</ob-common.version>
-        <ob-clients.version>1.0.35</ob-clients.version>
+        <ob-clients.version>1.0.36</ob-clients.version>
     </properties>
 
     <modules>
