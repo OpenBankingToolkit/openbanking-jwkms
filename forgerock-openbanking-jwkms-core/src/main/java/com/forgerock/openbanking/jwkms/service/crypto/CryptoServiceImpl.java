@@ -275,7 +275,7 @@ public class CryptoServiceImpl implements CryptoService {
                 .keyID(currentSigningKey.getKid());
         List<String> customHeaderClaims = new ArrayList<>();
         if (signingRequest.getCustomHeaderClaims().isIncludeB64()) {
-            headerBuilder.customParam(OpenBankingConstants.OBJwtHeaderClaims.B64, false);
+            headerBuilder.base64URLEncodePayload(false);
             customHeaderClaims.add(OpenBankingConstants.OBJwtHeaderClaims.B64);
         }
         if (signingRequest.getCustomHeaderClaims().isIncludeOBIss()) {

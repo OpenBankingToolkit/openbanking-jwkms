@@ -32,6 +32,7 @@ import com.forgerock.openbanking.jwt.services.CryptoApiClient;
 import com.forgerock.openbanking.model.ApplicationIdentity;
 import com.forgerock.openbanking.ssl.model.ForgeRockApplicationResponse;
 import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.util.JSONObjectUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -41,6 +42,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.text.ParseException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -116,7 +118,9 @@ public class ApplicationApiController implements ApplicationApi {
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
         }
-        return ResponseEntity.ok(cryptoService.getTransportPublicJwks(isApplication.get()).toJSONObject().toJSONString());
+        Map<String, Object> jwsHeaders = cryptoService.getTransportPublicJwks(isApplication.get()).toJSONObject();
+        String jsonRepresentation = JSONObjectUtils.toJSONString(jwsHeaders);
+        return ResponseEntity.ok(jsonRepresentation);
     }
 
     @RequestMapping(value = "/{appId}/transport/rotate", method = RequestMethod.PUT)
@@ -158,7 +162,9 @@ public class ApplicationApiController implements ApplicationApi {
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
         }
-        return ResponseEntity.ok(cryptoService.getPublicJwks(isApplication.get()).toJSONObject().toJSONString());
+        String jsonRepresentation =
+                JSONObjectUtils.toJSONString(cryptoService.getPublicJwks(isApplication.get()).toJSONObject());
+        return ResponseEntity.ok(jsonRepresentation);
     }
 
     @RequestMapping(value = "/{appId}/rotate", method = RequestMethod.PUT)
@@ -298,7 +304,9 @@ public class ApplicationApiController implements ApplicationApi {
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Application '" + isApp.get().getApplicationId() + "' can't be found.");
         }
-        return ResponseEntity.ok(cryptoService.getPublicJwks(isApplication.get()).toJSONObject().toJSONString());
+        String jsonRepresentation =
+                JSONObjectUtils.toJSONString(cryptoService.getPublicJwks(isApplication.get()).toJSONObject());
+        return ResponseEntity.ok(jsonRepresentation);
     }
 
 
