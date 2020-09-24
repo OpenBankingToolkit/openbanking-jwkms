@@ -40,6 +40,7 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.util.JSONObjectUtils;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -257,7 +258,8 @@ public class CryptoServiceImplTest {
         // Then
         assertThat(signedJwt).isNotNull();
         assertThat(signedJwt.getState()).isEqualTo(JWSObject.State.SIGNED);
-        assertThat(signedJwt.getHeader().toJSONObject().toJSONString()).isEqualTo("{\"kid\":\"159e5a7ed77ec6fe3db14f0d6e3d4585902c0192\",\"alg\":\"PS256\"}");
+        assertThat(JSONObjectUtils.toJSONString(signedJwt.getHeader().toJSONObject())).isEqualTo("{\"kid" +
+                "\":\"159e5a7ed77ec6fe3db14f0d6e3d4585902c0192\",\"alg\":\"PS256\"}");
         assertThat(signedJwt.getHeader().getKeyID()).isEqualTo(sigKey.getKid());
         assertThat(signedJwt.getHeader().getAlgorithm().getName()).isEqualTo(sigKey.getAlgorithm().getName());
     }
