@@ -32,6 +32,7 @@ import com.forgerock.openbanking.jwt.services.CryptoApiClient;
 import com.forgerock.openbanking.model.ApplicationIdentity;
 import com.forgerock.openbanking.ssl.model.ForgeRockApplicationResponse;
 import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.util.JSONObjectUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -116,7 +117,7 @@ public class ApplicationApiController implements ApplicationApi {
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
         }
-        return ResponseEntity.ok(cryptoService.getTransportPublicJwks(isApplication.get()).toJSONObject().toJSONString());
+        return ResponseEntity.ok(JSONObjectUtils.toJSONString(cryptoService.getTransportPublicJwks(isApplication.get()).toJSONObject()));
     }
 
     @RequestMapping(value = "/{appId}/transport/rotate", method = RequestMethod.PUT)
@@ -158,7 +159,7 @@ public class ApplicationApiController implements ApplicationApi {
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Application '" + appId + "' can't be found.");
         }
-        return ResponseEntity.ok(cryptoService.getPublicJwks(isApplication.get()).toJSONObject().toJSONString());
+        return ResponseEntity.ok(JSONObjectUtils.toJSONString(cryptoService.getPublicJwks(isApplication.get()).toJSONObject()));
     }
 
     @RequestMapping(value = "/{appId}/rotate", method = RequestMethod.PUT)
@@ -298,7 +299,7 @@ public class ApplicationApiController implements ApplicationApi {
         if (!isApplication.isPresent()) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Application '" + isApp.get().getApplicationId() + "' can't be found.");
         }
-        return ResponseEntity.ok(cryptoService.getPublicJwks(isApplication.get()).toJSONObject().toJSONString());
+        return ResponseEntity.ok(JSONObjectUtils.toJSONString(cryptoService.getPublicJwks(isApplication.get()).toJSONObject()));
     }
 
 
