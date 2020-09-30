@@ -26,6 +26,7 @@ import com.forgerock.openbanking.core.utils.JwtUtils;
 import com.forgerock.openbanking.jwt.exceptions.InvalidTokenException;
 import com.forgerock.openbanking.jwt.model.SigningRequest;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.crypto.MACVerifier;
@@ -159,7 +160,7 @@ public class TokenService {
      * @param jwkSetMap the JWKS public of the party that has signed the JWT.
      * @return true if the JWS can be verified with one of the JWK contained in the JWKs list.
      */
-    public boolean  validateSignature(SignedJWT jws, JWKSet jwkSetMap, Set<String> defCritHeaders) {
+    public boolean validateSignature(SignedJWT jws, JWKSet jwkSetMap, Set<String> defCritHeaders) {
         JWK jwk = jwkSetMap.getKeyByKeyId(jws.getHeader().getKeyID());
         if (jwk == null) {
             LOGGER.warn("Couldn't find the JWK corresponding to kid {} in jwk set", jws.getHeader().getKeyID(),
@@ -170,25 +171,10 @@ public class TokenService {
 
         try {
             JWSVerifier verifier = getJwsVerifier(defCritHeaders, jwk);
-            byte[] signingInput;
-
-            if (jws.getHeader().getCustomParam("b64") != null
-                    && !(Boolean) jws.getHeader().getCustomParam("b64")) {
-                signingInput = JwtUtils.getSingingInputNonEncodedPayload(jws.getHeader(), jws.getPayload().toString());
-            } else {
-                signingInput = jws.getSigningInput();
-            }
-
-            return verifier.verify(jws.getHeader(), signingInput, jws.getSignature());
+            return jws.verify(verifier);
         } catch (JOSEException e) {
             LOGGER.error("Failed to verify jws='{}' signature", jws, e);
             throw new IllegalArgumentException("Failed to verify jws='" + jws + "' signature", e);
-        } catch (ParseException e) {
-            LOGGER.error("Failed to read claims from jws='{}'", jws, e);
-            throw new IllegalArgumentException("Failed to read claims from jws='" + jws + "'", e);
-        } catch (UnsupportedEncodingException e) {
-            LOGGER.error("Failed to encode payload and header in byte. jws={}", jws, e);
-            throw new RuntimeException("Failed to encode payload and header in byte. jws='" + jws + "'", e);
         }
     }
 

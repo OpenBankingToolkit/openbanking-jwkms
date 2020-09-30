@@ -36,6 +36,7 @@ import com.forgerock.openbanking.jwt.model.SigningRequest;
 import com.forgerock.openbanking.jwt.model.ValidDetachedJwtResponse;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jose.crypto.RSASSASigner;
@@ -168,9 +169,6 @@ public class CryptoServiceImpl implements CryptoService {
         } catch (ParseException e) {
             LOGGER.error("Couldn't rebuild JWT", e);
             throw new RuntimeException(e);
-        } catch (UnsupportedEncodingException e) {
-            LOGGER.error("Couldn't encode JWT part", e);
-            throw new RuntimeException(e);
         }
     }
 
@@ -214,18 +212,12 @@ public class CryptoServiceImpl implements CryptoService {
 
             SignedJWT signedJWT = signJws(signingJwk, algorithm, jwsObject);
 
-            String jwsSerialised = signedJWT.serialize();
-            LOGGER.debug("The JWS before we transform it into a detached signature: {}", jwsSerialised);
-
-            String detachedSignature = "";
-            if (jwsSerialised != null) {
-                String[] jwsSplit = jwsSerialised.split("\\.");
-                detachedSignature = jwsSplit[0] + ".." + jwsSplit[2];
-            }
-            LOGGER.debug("The detached signature resulting: {}", jwsSerialised);
+            boolean isDetachedPayload = !jwsObject.getHeader().isBase64URLEncodePayload(); // a detached payload does NOT have a b64 encoded payload
+            String jws = jwsObject.serialize(isDetachedPayload);
+            LOGGER.debug("The resulting jws: {}", jws);
             return CreateDetachedJwtResponse.builder()
-                    .detachedSignature(detachedSignature)
-                    .intermediateJWSConstructedForDebug(jwsSerialised)
+                    .detachedSignature(jws)
+                    .intermediateJWSConstructedForDebug(signedJWT.serialize())
                     .build();
         } catch (JOSEException e) {
             LOGGER.error("Couldn't load the key behind the kid '{}'", currentSigningKey.getKid(), e);
@@ -233,40 +225,33 @@ public class CryptoServiceImpl implements CryptoService {
         } catch (ParseException e) {
             LOGGER.error("Couldn't parse JWT which should not be possible", e);
             throw new RuntimeException(e);
-        } catch (UnsupportedEncodingException e) {
-                LOGGER.error("Couldn't encode JWT part", e);
-                throw new RuntimeException(e);
         }
     }
 
-    private SignedJWT signJws(JWK signingJwk, JWSAlgorithm algorithm, JWSObject jwsObject) throws JOSEException, ParseException, UnsupportedEncodingException {
+    private SignedJWT signJws(JWK signingJwk, JWSAlgorithm algorithm, JWSObject jwsObject) throws JOSEException, ParseException {
         getSigningCounter(algorithm).increment();
         Timer.Sample timer = Timer.start(Metrics.globalRegistry);
         try {
-            KeyPair keyPairFromJWK = getKeyPairFromJWK(signingJwk);
-            JWSSigner signer;
-            if (keyPairFromJWK.getPrivate() instanceof ECPrivateKey) {
-                signer = new ECDSASigner((ECPrivateKey) getKeyPairFromJWK(signingJwk).getPrivate());
-            } else if (keyPairFromJWK.getPrivate() instanceof RSAPrivateKey) {
-                signer = new RSASSASigner(getKeyPairFromJWK(signingJwk).getPrivate());
-            } else {
-                LOGGER.error("Unknown algorithm '{}' used for generate the key {}",
-                        keyPairFromJWK.getPrivate().getClass(), signingJwk.getKeyID());
-                throw new RuntimeException("Unknown algorithm '" + keyPairFromJWK.getPrivate().getClass()
-                        + "' used for generate the key '" + signingJwk.getKeyID() + "'");
-            }
-            Base64URL signature;
-            if (jwsObject.getHeader().getCustomParam("b64") != null && !(Boolean) jwsObject.getHeader().getCustomParam("b64")) {
-                //Workaround the issue of the nimbus library by building the signature input manually.
-                byte[] signingInput = JwtUtils.getSingingInputNonEncodedPayload(jwsObject.getHeader(), jwsObject.getPayload().toString());
-                signature = signer.sign(jwsObject.getHeader(), signingInput);
-            } else {
-                signature = signer.sign(jwsObject.getHeader(), jwsObject.getSigningInput());
-            }
-            return new SignedJWT(jwsObject.getHeader().toBase64URL(), jwsObject.getPayload().toBase64URL(), signature);
+            JWSSigner signer = getJwsSigner(signingJwk);
+            jwsObject.sign(signer);
+            return new SignedJWT(jwsObject.getHeader().toBase64URL(), jwsObject.getPayload().toBase64URL(), jwsObject.getSignature());
         } finally {
             timer.stop(getSigningTimer(algorithm));
         }
+    }
+
+    private JWSSigner getJwsSigner(JWK signingJwk) throws JOSEException {
+        KeyPair keyPairFromJWK = getKeyPairFromJWK(signingJwk);
+        JWSSigner signer;
+        if (keyPairFromJWK.getPrivate() instanceof ECPrivateKey) {
+            signer = new ECDSASigner((ECPrivateKey) getKeyPairFromJWK(signingJwk).getPrivate());
+        } else if (keyPairFromJWK.getPrivate() instanceof RSAPrivateKey) {
+            signer = new RSASSASigner(getKeyPairFromJWK(signingJwk).getPrivate());
+        } else {
+            LOGGER.error("Unknown algorithm '{}' used for generate the key {}", keyPairFromJWK.getPrivate().getClass(), signingJwk.getKeyID());
+            throw new RuntimeException("Unknown algorithm '" + keyPairFromJWK.getPrivate().getClass() + "' used for generate the key '" + signingJwk.getKeyID() + "'");
+        }
+        return signer;
     }
 
     private JWSHeader generateJWSHeaderFromSigningRequest(SigningRequest signingRequest, String issuerId, JwkMsKey currentSigningKey, JWSAlgorithm algorithm) {

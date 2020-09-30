@@ -438,21 +438,28 @@ public class CryptoAPIClientImpl implements CryptoApiClient {
     }
 
     @Override
-    public ValidDetachedJwtResponse validateDetachedJWS(String jwsDetachedSignature, Object body, String expectedAudienceId, String expectedIssuerId, String jwkUri)
-            throws InvalidTokenException, ParseException, IOException {
-        String jwsSerialized = rebuildJWS(jwsDetachedSignature, body.toString());
+    public ValidDetachedJwtResponse validateDetachedJWS(String jws, Object body, String expectedAudienceId, String expectedIssuerId, String jwkUri)
+            throws ParseException, IOException {
+        String jwsSerialized = jws;
+        if (isDetachedJws(jws)) { // the JWS is no longer detached from v3.1.4 of the Read/Write API
+            jwsSerialized = rebuildJWS(jws, body.toString());
+        }
+
         LOGGER.debug("The JWS reconstruct from the detached signature: {}", jwsSerialized);
-        SignedJWT jws = (SignedJWT) JWTParser.parse(jwsSerialized);
-        return cryptoService.validateDetachedJwS(jws, expectedIssuerId, jwkUri);
+        SignedJWT signedJws = (SignedJWT) JWTParser.parse(jwsSerialized);
+        return cryptoService.validateDetachedJwS(signedJws, expectedIssuerId, jwkUri);
     }
 
     @Override
-    public ValidDetachedJwtResponse validateDetachedJWSWithJWK(String jwsDetachedSignature, Object body, String expectedAudienceId, String expectedIssuerId, JWK jwk)
-            throws InvalidTokenException, ParseException, IOException {
-        String jwsSerialized = rebuildJWS(jwsDetachedSignature, body.toString());
+    public ValidDetachedJwtResponse validateDetachedJWSWithJWK(String jws, Object body, String expectedAudienceId, String expectedIssuerId, JWK jwk)
+            throws ParseException {
+        String jwsSerialized = jws;
+        if (isDetachedJws(jws)) { // the JWS is no longer detached from v3.1.4 of the Read/Write API
+            jwsSerialized = rebuildJWS(jws, body.toString());
+        }
 
-        SignedJWT jws = (SignedJWT) JWTParser.parse(jwsSerialized);
-        return cryptoService.validateDetachedJwSWithJWK(jws, expectedIssuerId, jwk.toJSONString());
+        SignedJWT signedJws = (SignedJWT) JWTParser.parse(jwsSerialized);
+        return cryptoService.validateDetachedJwSWithJWK(signedJws, expectedIssuerId, jwk.toJSONString());
     }
 
     private RSAKey getJwkForEncryption(String jwkUri) {
@@ -501,15 +508,19 @@ public class CryptoAPIClientImpl implements CryptoApiClient {
         return keyId;
     }
 
+    private boolean isDetachedJws(String jws) {
+        Matcher jwsDetachedSignatureMatcher = jwsDetachedSignaturePattern.matcher(jws);
+        return jwsDetachedSignatureMatcher.find();
+    }
 
     private String rebuildJWS(String jwsDetachedSignature, String bodySerialised) {
-        String jwtPayloadEncoded = new String(java.util.Base64.getEncoder().encode(bodySerialised.getBytes()));
-        jwtPayloadEncoded = jwtPayloadEncoded.replace("=", "");
         Matcher jwsDetachedSignatureMatcher = jwsDetachedSignaturePattern.matcher(jwsDetachedSignature);
         if (!jwsDetachedSignatureMatcher.find()) {
             LOGGER.warn("{} is not a detached signature", jwsDetachedSignature);
             throw new IllegalArgumentException("'" + jwsDetachedSignature + "' is not a detached signature");
         }
+        String jwtPayloadEncoded = new String(java.util.Base64.getEncoder().encode(bodySerialised.getBytes()));
+        jwtPayloadEncoded = jwtPayloadEncoded.replace("=", "");
         return jwsDetachedSignatureMatcher.group(1) + jwtPayloadEncoded + jwsDetachedSignatureMatcher.group(2);
     }
 
