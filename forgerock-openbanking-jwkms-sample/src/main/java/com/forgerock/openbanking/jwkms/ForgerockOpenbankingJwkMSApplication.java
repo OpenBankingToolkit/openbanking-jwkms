@@ -27,8 +27,8 @@ import com.forgerock.openbanking.jwkms.repository.ForgeRockApplicationsRepositor
 import com.forgerock.openbanking.jwkms.service.application.ApplicationService;
 import com.forgerock.openbanking.model.OBRIRole;
 import com.mongodb.MongoClient;
-import dev.openbanking4.spring.security.multiauth.configurers.MultiAuthenticationCollectorConfigurer;
-import dev.openbanking4.spring.security.multiauth.configurers.collectors.StaticUserCollector;
+import com.forgerock.spring.security.multiauth.configurers.MultiAuthenticationCollectorConfigurer;
+import com.forgerock.spring.security.multiauth.configurers.collectors.StaticUserCollector;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.provider.mongo.MongoLockProvider;
 import org.springframework.beans.factory.annotation.Autowired;
