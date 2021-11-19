@@ -24,7 +24,6 @@ import com.forgerock.openbanking.constants.OpenBankingConstants;
 import com.forgerock.openbanking.core.config.ApplicationConfiguration;
 import com.forgerock.openbanking.core.model.Application;
 import com.forgerock.openbanking.core.model.JwkMsKey;
-import com.forgerock.openbanking.core.utils.JwtUtils;
 import com.forgerock.openbanking.jwkms.config.JwkMsConfigurationProperties;
 import com.forgerock.openbanking.jwkms.repository.ApplicationsRepository;
 import com.forgerock.openbanking.jwkms.service.application.ApplicationService;
@@ -36,13 +35,11 @@ import com.forgerock.openbanking.jwt.model.SigningRequest;
 import com.forgerock.openbanking.jwt.model.ValidDetachedJwtResponse;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.crypto.bc.BouncyCastleProviderSingleton;
 import com.nimbusds.jose.jwk.*;
-import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -50,12 +47,12 @@ import com.nimbusds.jwt.util.DateUtils;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.security.KeyPair;
 import java.security.interfaces.ECPrivateKey;
@@ -65,8 +62,8 @@ import java.text.ParseException;
 import java.util.*;
 
 @Service
+@Slf4j
 public class CryptoServiceImpl implements CryptoService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CryptoServiceImpl.class);
 
     private JwkStoreService jwkStoreService;
     private TokenService tokenService;
@@ -88,7 +85,8 @@ public class CryptoServiceImpl implements CryptoService {
 
     @Override
     public JWKSet getPublicJwks(Application application) {
-        LOGGER.debug("Get all the JWKs but the public version of them. No private key information will be returned.");
+        log.debug("Get all the JWKs for application '{}' but the public version of them. No private key information " +
+                "will be returned.", application);
 
         if (application != null) {
             List<JWK> jwks = new ArrayList<>();
@@ -109,7 +107,8 @@ public class CryptoServiceImpl implements CryptoService {
 
     @Override
     public JWKSet getTransportPublicJwks(Application application) {
-        LOGGER.debug("Get all the JWKs but the public version of them. No private key information will be returned.");
+        log.debug("Get all the transport JWKs for application '{}' but the public version of them. No private key " +
+                "information will be returned.", application);
 
         if (application != null) {
             List<JWK> jwks = new ArrayList<>();
@@ -130,8 +129,8 @@ public class CryptoServiceImpl implements CryptoService {
     @Override
     public SignedJWT sign(String issuerId, JWTClaimsSet claimsSet, Application application, Boolean includeKey) {
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Sign the claims {} for application {}", claimsSet, application);
+        if (log.isDebugEnabled()) {
+            log.debug("Sign the claims {} for application {}", claimsSet, application);
         }
 
         JWK signingJwk;
@@ -139,12 +138,12 @@ public class CryptoServiceImpl implements CryptoService {
         try {
             signingJwk = currentSigningKey.getJwk();
             if (signingJwk == null) {
-                LOGGER.debug("Couldn't find the private key for jwk '{}'. Resetting the keys as emergency solution",
+                log.debug("Couldn't find the private key for jwk '{}'. Resetting the keys as emergency solution",
                         currentSigningKey.getJwk());
                 applicationService.resetKeys(application);
                 signingJwk = currentSigningKey.getJwk();
             }
-            LOGGER.debug("Signing JWK: {}", signingJwk);
+            log.debug("Signing JWK: {}", signingJwk);
 
             JWTClaimsSet.Builder claimBuilder = new JWTClaimsSet.Builder(claimsSet);
             claimBuilder.issuer(issuerId);
@@ -164,10 +163,10 @@ public class CryptoServiceImpl implements CryptoService {
 
             return signJws(signingJwk, algorithm, signedJWT);
         } catch (JOSEException e) {
-            LOGGER.error("Couldn't load the key behind the kid '{}'", currentSigningKey.getKid(), e);
+            log.error("Couldn't load the key behind the kid '{}'", currentSigningKey.getKid(), e);
             throw new RuntimeException(e);
         } catch (ParseException e) {
-            LOGGER.error("Couldn't rebuild JWT", e);
+            log.error("Couldn't rebuild JWT", e);
             throw new RuntimeException(e);
         }
     }
@@ -177,8 +176,8 @@ public class CryptoServiceImpl implements CryptoService {
         if (issuerId == null) {
             issuerId = application.getIssuerId();
         }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Sign the payload {} for application {}", payload, application);
+        if (log.isDebugEnabled()) {
+            log.debug("Sign the payload {} for application {}", payload, application);
         }
         if (signingRequest == null) {
             signingRequest = SigningRequest.builder()
@@ -198,12 +197,12 @@ public class CryptoServiceImpl implements CryptoService {
         try {
             signingJwk = currentSigningKey.getJwk();
             if (signingJwk == null) {
-                LOGGER.debug("Couldn't find the private key for jwk '{}'. Resetting the keys as emergency solution",
+                log.debug("Couldn't find the private key for jwk '{}'. Resetting the keys as emergency solution",
                         currentSigningKey.getJwk());
                 applicationService.resetKeys(application);
                 signingJwk = currentSigningKey.getJwk();
             }
-            LOGGER.debug("Signing JWK: {}", signingJwk);
+            log.debug("Signing JWK: {}", signingJwk);
 
 
             JWSAlgorithm algorithm = (JWSAlgorithm) currentSigningKey.getAlgorithm();
@@ -214,16 +213,16 @@ public class CryptoServiceImpl implements CryptoService {
 
             boolean isDetachedPayload = !jwsObject.getHeader().isBase64URLEncodePayload(); // a detached payload does NOT have a b64 encoded payload
             String jws = jwsObject.serialize(isDetachedPayload);
-            LOGGER.debug("The resulting jws: {}", jws);
+            log.debug("The resulting jws: {}", jws);
             return CreateDetachedJwtResponse.builder()
                     .detachedSignature(jws)
                     .intermediateJWSConstructedForDebug(signedJWT.serialize())
                     .build();
         } catch (JOSEException e) {
-            LOGGER.error("Couldn't load the key behind the kid '{}'", currentSigningKey.getKid(), e);
+            log.error("Couldn't load the key behind the kid '{}'", currentSigningKey.getKid(), e);
             throw new RuntimeException(e);
         } catch (ParseException e) {
-            LOGGER.error("Couldn't parse JWT which should not be possible", e);
+            log.error("Couldn't parse JWT which should not be possible", e);
             throw new RuntimeException(e);
         }
     }
@@ -248,7 +247,7 @@ public class CryptoServiceImpl implements CryptoService {
         } else if (keyPairFromJWK.getPrivate() instanceof RSAPrivateKey) {
             signer = new RSASSASigner(getKeyPairFromJWK(signingJwk).getPrivate());
         } else {
-            LOGGER.error("Unknown algorithm '{}' used for generate the key {}", keyPairFromJWK.getPrivate().getClass(), signingJwk.getKeyID());
+            log.error("Unknown algorithm '{}' used for generate the key {}", keyPairFromJWK.getPrivate().getClass(), signingJwk.getKeyID());
             throw new RuntimeException("Unknown algorithm '" + keyPairFromJWK.getPrivate().getClass() + "' used for generate the key '" + signingJwk.getKeyID() + "'");
         }
         return signer;
@@ -286,8 +285,8 @@ public class CryptoServiceImpl implements CryptoService {
     public EncryptedJWT signAndEncrypt(String issuerId, JWTClaimsSet claimsSet, RSAKey jwkForEncryption, Application applicationKeys, Boolean includeKey)
             throws JOSEException {
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Sign the claims {} by {} and encrypt them with {}", claimsSet, applicationKeys, jwkForEncryption);
+        if (log.isDebugEnabled()) {
+            log.debug("Sign the claims {} by {} and encrypt them with {}", claimsSet, applicationKeys, jwkForEncryption);
         }
         return encrypt(sign(issuerId, claimsSet, applicationKeys, includeKey), jwkForEncryption);
     }
@@ -296,16 +295,16 @@ public class CryptoServiceImpl implements CryptoService {
     public SignedJWT decrypt(EncryptedJWT encryptedJWT, Application application) {
         JwkMsKey key = application.getKeys().get(encryptedJWT.getHeader().getKeyID());
         if (key == null) {
-            LOGGER.debug("Failed to find JWK for the following kid='{}'", encryptedJWT.getHeader().getKeyID());
+            log.debug("Failed to find JWK for the following kid='{}'", encryptedJWT.getHeader().getKeyID());
             throw new IllegalArgumentException("Failed to find JWK for the following kid='"
                     + encryptedJWT.getHeader().getKeyID() + "'");
         }
-        LOGGER.debug("In order to decrypt the JWE, we need to find the private key behind our public key used " +
+        log.debug("In order to decrypt the JWE, we need to find the private key behind our public key used " +
                 "by the third party.");
         try {
             JWK jwk = application.getCurrentEncryptionKey().getJwk();
             if (jwk == null) {
-                LOGGER.error("Couldn't find the private key corresponding to '{}'. Resetting the keys as emergency " +
+                log.error("Couldn't find the private key corresponding to '{}'. Resetting the keys as emergency " +
                         "solution", application.getCurrentEncryptionKey().getJwk());
                 applicationService.resetKeys(application);
                 return null;
@@ -315,7 +314,7 @@ public class CryptoServiceImpl implements CryptoService {
             encryptedJWT.decrypt(decrypter);
             return encryptedJWT.getPayload().toSignedJWT();
         } catch (JOSEException e) {
-            LOGGER.error("JWE object couldn't be decrypted", e);
+            log.error("JWE object couldn't be decrypted", e);
             return null;
         }
     }
@@ -331,8 +330,8 @@ public class CryptoServiceImpl implements CryptoService {
             audienceId = expectedAudienceId;
         }
         String issuer = signedJWT.getJWTClaimsSet().getIssuer();
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Validate the jws {} that has been signed for app {}", signedJWT.serialize(), applicationTo);
+        if (log.isDebugEnabled()) {
+            log.debug("Validate the jws {} that has been signed for app {}", signedJWT.serialize(), applicationTo);
         }
         Optional<Application> isApplicationFrom = applicationsRepository.findById(issuer);
         if (!isApplicationFrom.isPresent()) {
@@ -378,8 +377,8 @@ public class CryptoServiceImpl implements CryptoService {
     public void validate(SignedJWT signedJWT, String issuerId, String jwkUri) throws InvalidTokenException,
             ParseException, IOException {
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Validate the jws {} that has been signed for app with jwk uri {}", signedJWT.serialize(), jwkUri);
+        if (log.isDebugEnabled()) {
+            log.debug("Validate the jws {} that has been signed for app with jwk uri {}", signedJWT.serialize(), jwkUri);
         }
         JWKSet jwkSet = JWKSet.load(new URL(jwkUri));
         ApplicationConfiguration from = new ApplicationConfiguration() {
@@ -399,8 +398,8 @@ public class CryptoServiceImpl implements CryptoService {
     @Override
     public void validate(SignedJWT signedJWT, String issuerId, JWK jwk) throws InvalidTokenException {
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Validate the jws {} that has been signed for app with jwk {}", signedJWT.serialize(), jwk.toJSONString());
+        if (log.isDebugEnabled()) {
+            log.debug("Validate the jws {} that has been signed for app with jwk {}", signedJWT.serialize(), jwk.toJSONString());
         }
         JWKSet jwkSet = new JWKSet(jwk);
         ApplicationConfiguration from = new ApplicationConfiguration() {
@@ -443,7 +442,7 @@ public class CryptoServiceImpl implements CryptoService {
             tokenService.validateDetachedToken(signedJWT, from, null);
             builder.isValid(true);
         } catch (InvalidTokenException e) {
-            LOGGER.debug("JWT {} is invalid", signedJWT.serialize(), e);
+            log.debug("JWT {} is invalid", signedJWT.serialize(), e);
             builder.isValid(false);
             builder.message(e.getMessage());
         }
@@ -453,8 +452,8 @@ public class CryptoServiceImpl implements CryptoService {
     @Override
     public ValidDetachedJwtResponse validateDetachedJwS(SignedJWT signedJWT, String issuerId, String jwkUri)
             throws ParseException, IOException {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Validate the detached jws {} that has been signed for app with jwk uri {}", signedJWT.serialize(), jwkUri);
+        if (log.isDebugEnabled()) {
+            log.debug("Validate the detached jws {} that has been signed for app with jwk uri {}", signedJWT.serialize(), jwkUri);
         }
         JWKSet jwkSet = JWKSet.load(new URL(jwkUri));
         ApplicationConfiguration from = new ApplicationConfiguration() {
@@ -474,7 +473,7 @@ public class CryptoServiceImpl implements CryptoService {
             tokenService.validateDetachedToken(signedJWT, from, null);
             builder.isValid(true);
         } catch (InvalidTokenException e) {
-            LOGGER.debug("JWT {} is invalid", signedJWT.serialize(), e);
+            log.debug("JWT {} is invalid", signedJWT.serialize(), e);
             builder.isValid(false);
             builder.message(e.getMessage());
         }
@@ -484,8 +483,8 @@ public class CryptoServiceImpl implements CryptoService {
     @Override
     public ValidDetachedJwtResponse validateDetachedJwSWithJWK(SignedJWT signedJWT, String issuerId, String jwk)
             throws ParseException {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Validate the detached jws {} that has been signed for app with jwk {}", signedJWT.serialize(), jwk);
+        if (log.isDebugEnabled()) {
+            log.debug("Validate the detached jws {} that has been signed for app with jwk {}", signedJWT.serialize(), jwk);
         }
         JWKSet jwkSet = new JWKSet(JWK.parse(jwk));
         ApplicationConfiguration from = new ApplicationConfiguration() {
@@ -505,7 +504,7 @@ public class CryptoServiceImpl implements CryptoService {
             tokenService.validateDetachedToken(signedJWT, from, null);
             builder.isValid(true);
         } catch (InvalidTokenException e) {
-            LOGGER.debug("JWT {} is invalid", signedJWT.serialize(), e);
+            log.debug("JWT {} is invalid", signedJWT.serialize(), e);
             builder.isValid(false);
             builder.message(e.getMessage());
         }
@@ -514,28 +513,28 @@ public class CryptoServiceImpl implements CryptoService {
 
 
     private static KeyPair getKeyPairFromJWK(JWK jwk) {
-        LOGGER.debug("Get keypair for JWK {}", jwk);
+        log.debug("Get keypair for JWK {}", jwk);
         try {
             if (KeyType.RSA == jwk.getKeyType()) {
-                LOGGER.debug("The JWK is a RSA key");
+                log.debug("The JWK is a RSA key");
                 RSAKey rsaKey = (RSAKey) jwk;
                 return new KeyPair(rsaKey.toPublicKey(), rsaKey.toPrivateKey());
             } else if (KeyType.EC == jwk.getKeyType()) {
-                LOGGER.debug("The JWK is an EC key");
+                log.debug("The JWK is an EC key");
                 ECKey ecKey = (ECKey) jwk;
                 return new KeyPair(ecKey.toPublicKey(), ecKey.toPrivateKey());
             } else {
-                LOGGER.debug("Not implemented JWT type '" + jwk.getKeyType() + "'");
+                log.debug("Not implemented JWT type '" + jwk.getKeyType() + "'");
                 throw new IllegalArgumentException("Not implemented JWT type '" + jwk.getKeyType() + "'");
             }
         } catch (JOSEException e) {
-            LOGGER.error("Error when loading the keypair from the JWK. kid='{}'", jwk.getKeyID(), e);
+            log.error("Error when loading the keypair from the JWK. kid='{}'", jwk.getKeyID(), e);
             throw new RuntimeException(e);
         }
     }
 
     private EncryptedJWT encrypt(SignedJWT signedJWT, RSAKey jwkForEncryption) throws JOSEException {
-        LOGGER.debug("Encrypt the JWS '{}' with a RSA key", signedJWT.serialize());
+        log.debug("Encrypt the JWS '{}' with a RSA key", signedJWT.serialize());
         JWEHeader header = new JWEHeader.Builder(JWEAlgorithm.parse(jwkForEncryption.getAlgorithm().getName()),
                 EncryptionMethod.A128CBC_HS256).keyID(jwkForEncryption.getKeyID()).build();
         JWEObject jweObject = new JWEObject(header, new Payload(signedJWT));
@@ -547,7 +546,7 @@ public class CryptoServiceImpl implements CryptoService {
         try {
             return EncryptedJWT.parse(jweObject.serialize());
         } catch (ParseException e) {
-            LOGGER.error("Couldn't parse the jwe", e);
+            log.error("Couldn't parse the jwe", e);
             throw new RuntimeException(e);
         }
     }

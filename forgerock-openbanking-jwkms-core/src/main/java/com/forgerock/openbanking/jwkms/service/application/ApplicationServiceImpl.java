@@ -447,6 +447,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         if (forgeRockApplicationConfig.getSigningKey() != null) {
             try {
                 JwkMsKey signingJwkMsKey = convertJWKToJwkMSKey(forgeRockApplicationConfig.getSigningKey());
+                log.debug("Signing key in application {}, config has kid {}", name, signingJwkMsKey);
                 if (!application.getCurrentSigningKey().getKid().equals(signingJwkMsKey.getKid())) {
                     log.debug("Update the signing key for application {}", name);
                     application.getKeys().put(signingJwkMsKey.getKid(), signingJwkMsKey);
